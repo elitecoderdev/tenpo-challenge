@@ -1,0 +1,40 @@
+server:
+  max-http-request-header-size: 64KB
+
+spring:
+  application:
+    name: tenpoback
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/tenpo_challenge}
+    username: ${DB_USERNAME:tenpo}
+    password: ${DB_PASSWORD:tenpo}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  jackson:
+    deserialization:
+      adjust-dates-to-context-time-zone: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:4173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:4173,http://127.0.0.1:3000}
+  rate-limit:
+    capacity: ${APP_RATE_LIMIT_CAPACITY:3}
+    duration: ${APP_RATE_LIMIT_DURATION:PT1M}

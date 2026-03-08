@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tenpo_challenge}
+      POSTGRES_USER: ${POSTGRES_USER:-tenpo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tenpo}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tenpo -d tenpo_challenge']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ${BACKEND_IMAGE_NAME:-tenpo-backend}:${IMAGE_TAG:-latest}
+    build:
+      context: ./tenpo-backend
+    environment:
+      DB_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/tenpo_challenge}
+      DB_USERNAME: ${DB_USERNAME:-tenpo}
+      DB_PASSWORD: ${DB_PASSWORD:-tenpo}
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:4173,http://127.0.0.1:3000,http://127.0.0.1:5173,http://127.0.0.1:4173}
+    ports:
+      - '${BACKEND_PORT:-8080}:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    image: ${FRONTEND_IMAGE_NAME:-tenpo-frontend}:${IMAGE_TAG:-latest}
+    build:
+      context: ./tenpo-frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    ports:
+      - '${FRONTEND_PORT:-3000}:80'
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
