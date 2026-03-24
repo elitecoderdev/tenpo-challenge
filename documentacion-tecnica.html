@@ -576,7 +576,7 @@
     <a class="nav-link" href="#services">Servicios &amp; Lógica</a>
     <a class="nav-link" href="#validation">Validaciones &amp; DTOs</a>
     <a class="nav-link" href="#exceptions">Manejo de Errores</a>
-    <a class="nav-link" href="#security">Seguridad</a>
+    <a class="nav-link" href="#security">Seguridad &amp; API Key</a>
     <a class="nav-link" href="#database">Base de Datos</a>
   </nav>
 
@@ -652,7 +652,7 @@
           <div class="stat-label">Req / minuto (rate limit)</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" style="color:var(--accent3);">4</div>
+          <div class="stat-value" style="color:var(--accent3);">5</div>
           <div class="stat-label">Suites de Tests</div>
         </div>
       </div>
@@ -1391,9 +1391,44 @@ public class GlobalExceptionHandler {
         </div>
       </div>
 
-      <div class="callout warning">
-        <span class="callout-icon">⚠️</span>
-        <p><strong>Sin autenticación:</strong> La API no implementa JWT ni OAuth. Es un challenge enfocado en arquitectura y calidad de código. En producción real se añadiría Spring Security con autenticación.</p>
+      <!-- API Key Authentication / Autenticación por API Key -->
+      <div style="margin-bottom:24px;">
+        <h3 style="font-size:16px; color:#fff; margin-bottom:16px;">Autenticación por API Key</h3>
+        <div class="card-grid cols-2">
+          <div class="card">
+            <h3>Cadena de filtros</h3>
+            <div class="info-row"><span class="info-key">@Order 1</span><span class="info-value"><code>ApiKeyAuthFilter</code> — valida el header <code>X-API-Key</code></span></div>
+            <div class="info-row"><span class="info-key">@Order 2</span><span class="info-value"><code>RateLimitFilter</code> — verifica la cuota por IP</span></div>
+            <div class="info-row"><span class="info-key">Ruta cubierta</span><span class="info-value">Todas las rutas <code>/api/**</code></span></div>
+            <div class="info-row"><span class="info-key">Rutas excluidas</span><span class="info-value"><code>/swagger-ui/**</code>, <code>/v3/api-docs/**</code>, <code>/actuator/**</code></span></div>
+          </div>
+          <div class="card">
+            <h3>Comportamiento</h3>
+            <div class="info-row"><span class="info-key">Header ausente</span><span class="info-value">HTTP 401 — cuerpo <code>ApiError</code> JSON estructurado</span></div>
+            <div class="info-row"><span class="info-key">Clave incorrecta</span><span class="info-value">HTTP 401 — mensaje diferente al caso anterior</span></div>
+            <div class="info-row"><span class="info-key">Clave correcta</span><span class="info-value">Continúa hacia <code>RateLimitFilter</code></span></div>
+            <div class="info-row"><span class="info-key">Variable de entorno</span><span class="info-value"><code>APP_API_KEY</code> (default: <code>tenpo-dev-key</code>)</span></div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <h3 style="font-size:14px; color:#fff; margin-bottom:10px;">Headers de seguridad (en toda respuesta, incluyendo 401)</h3>
+          <div class="info-table">
+            <div class="info-row"><span class="info-key">X-Content-Type-Options</span><span class="info-value"><code>nosniff</code></span></div>
+            <div class="info-row"><span class="info-key">X-Frame-Options</span><span class="info-value"><code>DENY</code></span></div>
+            <div class="info-row"><span class="info-key">Cache-Control</span><span class="info-value"><code>no-store</code></span></div>
+          </div>
+        </div>
+
+        <div class="callout info" style="margin-top:12px;">
+          <span class="callout-icon">💡</span>
+          <p><strong>Swagger UI:</strong> La Swagger UI expone un botón "Authorize" (ícono de candado). Ingresa la API key allí para probar los endpoints autenticados. La Swagger UI misma no requiere la key para accederse.</p>
+        </div>
+
+        <div class="callout success" style="margin-top:8px;">
+          <span class="callout-icon">✅</span>
+          <p><strong>Frontend:</strong> La instancia de Axios en <code>src/app/api.ts</code> lee <code>VITE_API_KEY</code> (variable de entorno, default <code>tenpo-dev-key</code>) y adjunta el header <code>X-API-Key</code> en cada solicitud automáticamente.</p>
+        </div>
       </div>
 
       <div style="margin-top:20px;">
@@ -1827,6 +1862,8 @@ app:
               <tr><td><code>DB_USERNAME</code></td><td>tenpo</td><td>Usuario DB</td></tr>
               <tr><td><code>DB_PASSWORD</code></td><td>tenpo</td><td>Password DB</td></tr>
               <tr><td><code>BACKEND_PORT</code></td><td>8080</td><td>Puerto del servidor</td></tr>
+              <tr><td><code>APP_API_KEY</code></td><td>tenpo-dev-key</td><td>API key aceptada en el header <code>X-API-Key</code></td></tr>
+              <tr><td><code>VITE_API_KEY</code></td><td>tenpo-dev-key</td><td>API key enviada por el frontend en el header <code>X-API-Key</code></td></tr>
               <tr><td><code>APP_CORS_ALLOWED_ORIGINS</code></td><td>localhost:3000,5173,4173</td><td>Orígenes CORS</td></tr>
               <tr><td><code>APP_RATE_LIMIT_CAPACITY</code></td><td>3</td><td>Req por ventana</td></tr>
               <tr><td><code>APP_RATE_LIMIT_DURATION</code></td><td>PT1M</td><td>Duración ventana (ISO-8601)</td></tr>
@@ -1884,7 +1921,19 @@ app:
           <span class="badge badge-red">@SpringBootTest + MockMvc</span>
           <div style="margin-top:10px; font-size:13px; color:var(--muted);">
             <div style="margin:4px 0;">✓ shouldBlockFourthRequestWithinTheSameMinute</div>
-            <div style="margin:4px 0; color: var(--accent2);">Rate limit en tests: 25 req/min (para no interferir)</div>
+            <div style="margin:4px 0; color: var(--accent2);">Envía header <code>X-API-Key</code>. Rate limit en tests: 25 req/min</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>ApiKeyAuthFilterIntegrationTest</h3>
+          <span class="badge badge-red">@SpringBootTest + MockMvc</span>
+          <div style="margin-top:10px; font-size:13px; color:var(--muted);">
+            <div style="margin:4px 0;">✓ Header ausente → 401</div>
+            <div style="margin:4px 0;">✓ Clave incorrecta → 401 (mensaje diferente)</div>
+            <div style="margin:4px 0;">✓ Clave correcta → pasa al siguiente filtro</div>
+            <div style="margin:4px 0;">✓ <code>/swagger-ui</code> sin clave → 200</div>
+            <div style="margin:4px 0;">✓ <code>/v3/api-docs</code> sin clave → 200</div>
+            <div style="margin:4px 0;">✓ <code>/actuator/health</code> sin clave → 200</div>
           </div>
         </div>
       </div>
@@ -1974,6 +2023,27 @@ mvn test</code></pre>
         <div class="card">
           <h3>Cache optimista post-mutación</h3>
           <p><code>queryClient.setQueryData()</code> en lugar de <code>refetch()</code>. Feedback visual inmediato. Preserva las 3 solicitudes/min del rate limit.</p>
+        </div>
+      </div>
+
+      <!-- Rendimiento Frontend / Frontend Performance -->
+      <h3 style="font-size:16px; color:#fff; margin-bottom:16px; margin-top:28px;">Rendimiento Frontend — optimizaciones adicionales</h3>
+      <div class="card-grid cols-2">
+        <div class="card">
+          <h3>useMemo para valores derivados</h3>
+          <p><code>visibleTransactions</code>, <code>totalAmount</code> y <code>uniqueCustomers</code> se calculan con <code>useMemo</code> en <code>App.tsx</code>. Solo se recomputan cuando cambian sus dependencias, evitando recálculos en re-renders no relacionados.</p>
+        </div>
+        <div class="card">
+          <h3>useCallback para event handlers</h3>
+          <p>Todos los callbacks de eventos en <code>App.tsx</code> están envueltos en <code>useCallback</code>. Las referencias de función son estables entre renders, lo que evita re-renders innecesarios en los componentes hijos que los reciben como props.</p>
+        </div>
+        <div class="card">
+          <h3>React.memo en TransactionList y TransactionForm</h3>
+          <p>Ambos componentes están envueltos en <code>React.memo</code>. Se saltean el re-render cuando sus props no cambian, lo cual es especialmente beneficioso cuando el estado del componente padre cambia por razones no relacionadas (ej. apertura del modal).</p>
+        </div>
+        <div class="card">
+          <h3>Code splitting con manualChunks</h3>
+          <p><code>vite.config.ts</code> define <code>manualChunks</code> para dividir las librerías de vendor en chunks separados: <code>vendor-react</code>, <code>vendor-query</code>, <code>vendor-utils</code>, <code>vendor-forms</code>. El código de la app cambia frecuentemente; los vendors rara vez. El navegador puede reutilizar los chunks de vendor cacheados entre deploys.</p>
         </div>
       </div>
 

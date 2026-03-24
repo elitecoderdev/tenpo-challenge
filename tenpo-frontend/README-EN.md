@@ -15,8 +15,9 @@ per-client rate limit.
 4. [React Query Cache Strategy](#4-react-query-cache-strategy)
 5. [Validation Rules](#5-validation-rules)
 6. [DRY Analysis](#6-dry-analysis)
-7. [Performance Notes](#7-performance-notes)
-8. [Runtime Configuration](#8-runtime-configuration)
+7. [API Key Authentication](#7-api-key-authentication)
+8. [Performance Notes](#7b-performance-notes)
+9. [Runtime Configuration](#8-runtime-configuration)
 9. [Local Development](#9-local-development)
 10. [Docker](#10-docker)
 11. [Manual QA Flow](#11-manual-qa-flow)
@@ -227,7 +228,23 @@ All three mutation `onError` handlers call `extractApiError()` → `normalizeApi
 
 ---
 
-## 7. Performance Notes
+## 7. API Key Authentication
+
+The frontend reads the API key from the `VITE_API_KEY` environment variable (falls back to `tenpo-dev-key`). The Axios instance in `src/app/api.ts` attaches an `X-API-Key` header to **every request** automatically via a request interceptor.
+
+```
+VITE_API_KEY is set (e.g. in .env)
+  → use that value as X-API-Key header
+
+VITE_API_KEY is not set
+  → fall back to "tenpo-dev-key"
+```
+
+The `.env.example` file includes `VITE_API_KEY=tenpo-dev-key`. Set this variable before running in an environment where the backend uses a different key.
+
+---
+
+## 7b. Performance Notes
 
 | Technique | Where | Effect |
 |---|---|---|
@@ -240,6 +257,10 @@ All three mutation `onError` handlers call `extractApiError()` → `normalizeApi
 | Merchant hue is computed, not stored | `TransactionList.tsx` | `stringToHue()` runs on render; no extra API field needed |
 | Self-hosted fonts (`@fontsource`) | `main.tsx` | Works offline and in Docker without CDN |
 | `react-hook-form` | `TransactionForm.tsx` | Uncontrolled inputs with minimal re-renders |
+| `useMemo` for derived values | `App.tsx` | `visibleTransactions`, `totalAmount`, `uniqueCustomers` recomputed only when their dependencies change |
+| `useCallback` for event handlers | `App.tsx` | Stable function references prevent unnecessary re-renders of child components |
+| `React.memo` on list and form | `TransactionList`, `TransactionForm` | Components skip re-render when their props are unchanged |
+| `manualChunks` in `vite.config.ts` | Build output | Vendor libs split into `vendor-react`, `vendor-query`, `vendor-utils`, `vendor-forms` — better browser cache utilization across deploys |
 
 ---
 
@@ -249,6 +270,7 @@ All three mutation `onError` handlers call `extractApiError()` → `normalizeApi
 |---|---|---|
 | `FRONTEND_PORT` | Host port for the container | `3000` |
 | `VITE_API_BASE_URL` | Base URL for the production build | `""` (uses relative `/api`) |
+| `VITE_API_KEY` | API key sent as `X-API-Key` on every request | `tenpo-dev-key` |
 | `FRONTEND_IMAGE_NAME` | Docker image name | `tenpo-frontend` |
 | `IMAGE_TAG` | Docker image tag | `latest` |
 

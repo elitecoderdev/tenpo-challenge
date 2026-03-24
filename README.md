@@ -79,6 +79,7 @@ A production-minded transaction management system built with **Spring Boot 3** (
 Browser
   │
   │ HTTP GET/POST/PUT/DELETE /api/transactions[/{id}]
+  │ Header: X-API-Key: <api-key>
   ▼
 Nginx (tenpo-frontend container)
   │  /api/** → proxy_pass http://backend:8080
@@ -86,7 +87,12 @@ Nginx (tenpo-frontend container)
   ▼
 Spring Boot (tenpo-backend container)
   │
-  ├─ RateLimitFilter (OncePerRequestFilter)
+  ├─ ApiKeyAuthFilter (@Order 1, OncePerRequestFilter)
+  │    checks X-API-Key header against app.security.api-key
+  │    if missing or wrong: returns 401 JSON immediately
+  │    adds X-Content-Type-Options, X-Frame-Options, Cache-Control headers
+  │
+  ├─ RateLimitFilter (@Order 2, OncePerRequestFilter)
   │    resolves client IP → checks Caffeine counter
   │    if blocked: returns 429 JSON immediately
   │
@@ -510,6 +516,19 @@ Form-to-payload conversion and initial-value computation are defined once in `sc
 
 ## 9. Security Analysis
 
+### API Key Authentication
+
+`ApiKeyAuthFilter` (`@Order(1)`) intercepts every `/api/**` request and validates the `X-API-Key` header against the value configured in `app.security.api-key` (env var `APP_API_KEY`, default `tenpo-dev-key`).
+
+- Missing key → HTTP 401 with structured `ApiError` JSON body
+- Wrong key → HTTP 401 (different message)
+- Correct key → request continues to `RateLimitFilter`
+- Bypassed for: `/swagger-ui/**`, `/v3/api-docs/**`, `/actuator/**`
+
+Security headers added to every response: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Cache-Control: no-store`.
+
+The frontend Axios instance reads `VITE_API_KEY` (env var, default `tenpo-dev-key`) and sends it as `X-API-Key` on every request automatically.
+
 ### CORS
 
 `WebConfiguration` builds the CORS allowlist from `app.cors.allowed-origins` (env var). If the list is empty, no origins are mapped — the behavior is **fail-closed** (all cross-origin requests blocked). In Docker Compose the default allows `localhost:3000` and `localhost:5173` only.
@@ -611,21 +630,23 @@ Form-to-payload conversion and initial-value computation are defined once in `sc
 # Create
 curl -X POST http://localhost:8080/api/transactions \
   -H 'Content-Type: application/json' \
+  -H 'X-API-Key: tenpo-dev-key' \
   -d '{"amountInPesos":21000,"merchant":"Restaurante","customerName":"Camila Torres","transactionDate":"2026-03-06T19:45:00"}'
 
 # List
-curl http://localhost:8080/api/transactions
+curl -H 'X-API-Key: tenpo-dev-key' http://localhost:8080/api/transactions
 
 # Filter by customer
-curl 'http://localhost:8080/api/transactions?customerName=Camila%20Torres'
+curl -H 'X-API-Key: tenpo-dev-key' 'http://localhost:8080/api/transactions?customerName=Camila%20Torres'
 
 # Update
 curl -X PUT http://localhost:8080/api/transactions/1 \
   -H 'Content-Type: application/json' \
+  -H 'X-API-Key: tenpo-dev-key' \
   -d '{"amountInPesos":24000,"merchant":"Restaurante actualizado","customerName":"Camila Torres","transactionDate":"2026-03-06T20:15:00"}'
 
 # Delete
-curl -X DELETE http://localhost:8080/api/transactions/1
+curl -X DELETE -H 'X-API-Key: tenpo-dev-key' http://localhost:8080/api/transactions/1
 ```
 
 ### Swagger UI
@@ -758,6 +779,15 @@ npm run dev   # → http://localhost:5173 (Vite proxies /api to :8080)
 ```
 
 Environment variables are documented in `.env.example` files in each directory.
+
+Key variables for API key authentication:
+
+| Variable | Where | Default | Description |
+|---|---|---|---|
+| `APP_API_KEY` | `tenpo-backend/.env` | `tenpo-dev-key` | API key the backend accepts in the `X-API-Key` header |
+| `VITE_API_KEY` | `tenpo-frontend/.env` | `tenpo-dev-key` | API key the frontend sends in the `X-API-Key` header |
+
+Both values must match for the frontend to communicate with the backend.
 
 ---
 

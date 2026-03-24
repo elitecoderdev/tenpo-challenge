@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Tenpo Transactions API",
-    "description": "Complete CRUD collection for the Tenpo Transactions REST API.\n\nBase URL is controlled by the `baseUrl` collection variable (default: http://localhost:8080).\nChange it once in the collection Variables tab and all requests update automatically.\n\nRate limit: 3 requests / minute / client (HTTP 429 when exceeded).",
+    "description": "Complete CRUD collection for the Tenpo Transactions REST API.\n\nAuthentication: every /api/** request requires the X-API-Key header.\nSet the `apiKey` collection variable once and all requests will use it automatically.\nDefault development key: tenpo-dev-key\n\nBase URL is controlled by the `baseUrl` collection variable (default: http://localhost:8080).\n\nRate limit: 3 requests / minute / client (HTTP 429 when exceeded).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -12,12 +12,38 @@
       "description": "Backend base URL. Override for Docker full-stack (http://localhost:8080) or any other environment."
     },
     {
+      "key": "apiKey",
+      "value": "tenpo-dev-key",
+      "type": "string",
+      "description": "API key sent in the X-API-Key header. Default development value: tenpo-dev-key. Override with APP_API_KEY env var in production."
+    },
+    {
       "key": "transactionId",
       "value": "1",
       "type": "string",
       "description": "ID of the transaction used in single-resource requests. Update after running 'Create transaction'."
     }
   ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "X-API-Key",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
   "item": [
     {
       "name": "Transactions",

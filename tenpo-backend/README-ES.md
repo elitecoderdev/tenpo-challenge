@@ -16,9 +16,10 @@ manejo estructurado de errores y límite de tasa por cliente.
 5. [Modelo de datos](#5-modelo-de-datos)
 6. [Resumen de la API](#6-resumen-de-la-api)
 7. [Modelo de errores](#7-modelo-de-errores)
-8. [Límite de tasa](#8-límite-de-tasa)
-9. [Análisis SOLID](#9-análisis-solid)
-10. [Notas de seguridad](#10-notas-de-seguridad)
+8. [Autenticación por API Key](#8-autenticación-por-api-key)
+9. [Límite de tasa](#8b-límite-de-tasa)
+10. [Análisis SOLID](#9-análisis-solid)
+11. [Notas de seguridad](#10-notas-de-seguridad)
 11. [Notas de rendimiento](#11-notas-de-rendimiento)
 12. [Configuración](#12-configuración)
 13. [Desarrollo local](#13-desarrollo-local)
@@ -344,7 +345,55 @@ curl -X DELETE http://localhost:8080/api/transactions/1
 
 ---
 
-## 8. Límite de tasa
+## 8. Autenticación por API Key
+
+Toda solicitud a `/api/**` debe incluir el header `X-API-Key`. El filtro corre con `@Order(1)`, antes que `RateLimitFilter`.
+
+### Orden de la cadena de filtros
+
+```
+Solicitud → ApiKeyAuthFilter (@Order 1) → RateLimitFilter (@Order 2) → DispatcherServlet → Controller
+```
+
+### Comportamiento
+
+| Escenario | Respuesta |
+|---|---|
+| Header `X-API-Key` ausente | HTTP 401 — cuerpo JSON estructurado `ApiError` |
+| Header `X-API-Key` presente pero con valor incorrecto | HTTP 401 — cuerpo JSON `ApiError` (mensaje distinto al caso anterior) |
+| Clave correcta | La solicitud continúa hacia `RateLimitFilter` |
+
+### Rutas excluidas
+
+`ApiKeyAuthFilter` **no** se aplica a:
+
+- `/swagger-ui/**`
+- `/v3/api-docs/**`
+- `/actuator/**`
+
+### Configuración
+
+| Propiedad | Variable de entorno | Valor por defecto |
+|---|---|---|
+| `app.security.api-key` | `APP_API_KEY` | `tenpo-dev-key` |
+
+### Headers de seguridad
+
+Los siguientes headers se agregan a **toda respuesta**, incluyendo las 401:
+
+| Header | Valor |
+|---|---|
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `DENY` |
+| `Cache-Control` | `no-store` |
+
+### Autenticación en Swagger UI
+
+La Swagger UI (`/swagger-ui`) expone un botón "Authorize" (ícono de candado). Ingresa la API key allí para probar los endpoints autenticados desde el navegador.
+
+---
+
+## 8b. Límite de tasa
 
 ### Algoritmo: contador de ventana fija
 
@@ -414,6 +463,7 @@ Cada clase tiene exactamente una razón para cambiar:
 
 | Preocupación | Implementación |
 |---|---|
+| Autenticación por API key | `ApiKeyAuthFilter` (@Order 1): toda solicitud a `/api/**` requiere el header `X-API-Key`; 401 si falta o es incorrecta |
 | CORS | Lista blanca desde variable de entorno; fail-closed si está vacía |
 | Validación de entrada | Bean Validation + Zod (frontend); CHECK de BD (último recurso) |
 | Filtración de información en errores | Handler de 500 devuelve mensaje genérico; sin stack trace en la respuesta |
@@ -448,6 +498,7 @@ Cada clase tiene exactamente una razón para cambiar:
 | `DB_USERNAME` | Usuario del datasource de Spring | `tenpo` |
 | `DB_PASSWORD` | Contraseña del datasource de Spring | `tenpo` |
 | `BACKEND_PORT` | Puerto del host para la API | `8080` |
+| `APP_API_KEY` | API key requerida en el header `X-API-Key` | `tenpo-dev-key` |
 | `APP_CORS_ALLOWED_ORIGINS` | Orígenes de navegador permitidos (separados por coma) | valores por defecto de localhost |
 | `APP_RATE_LIMIT_CAPACITY` | Solicitudes por ventana | `3` |
 | `APP_RATE_LIMIT_DURATION` | Duración de la ventana (ISO-8601) | `PT1M` |
@@ -572,7 +623,8 @@ Los tests usan H2 en modo compatibilidad PostgreSQL — **no necesitas Docker ni
 | `TransactionServiceTest` | Unitario | Límite de cuota (99 vs 100), crear/actualizar/eliminar, canonicalización de nombre, guard de desbordamiento de entero |
 | `TransactionRepositoryTest` | Integración (H2) | Queries derivadas, hook `@PrePersist`, filtro por nombre normalizado |
 | `TransactionControllerTest` | Integración (MockMvc) | Códigos de estado HTTP, cabecera Location, forma de fieldErrors en 400, límite @Max |
-| `RateLimitFilterIntegrationTest` | Integración (contexto completo) | Ciclo 3-permitidos + 4º-bloqueado, cabecera Retry-After, cuerpo JSON del 429 |
+| `RateLimitFilterIntegrationTest` | Integración (contexto completo) | Ciclo 3-permitidos + 4º-bloqueado, cabecera Retry-After, cuerpo JSON del 429 (envía header `X-API-Key`) |
+| `ApiKeyAuthFilterIntegrationTest` | Integración (contexto completo) | 6 casos: clave ausente → 401, clave incorrecta → 401, clave correcta → pasa, Swagger/Actuator excluidos |
 
 ### Ejecutar un test específico
 

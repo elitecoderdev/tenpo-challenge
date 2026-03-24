@@ -186,6 +186,151 @@ class TransactionServiceTest {
         assertThat(response).containsExactly(expected);
     }
 
+    // ── Update Transaction Tests ──────────────────────────────────────────────────────────
+
+    /**
+     * EN: Verifies that updateTransaction succeeds without performing a quota COUNT query
+     *     when the customer name does not change between the existing record and the request.
+     *     Same customer → the total count cannot increase → no quota check needed.
+     *
+     * ES: Verifica que updateTransaction tenga éxito sin realizar una consulta COUNT de cuota
+     *     cuando el nombre del cliente no cambia entre el registro existente y la solicitud.
+     *     Mismo cliente → el conteo total no puede aumentar → no se necesita verificación de cuota.
+     */
+    @Test
+    void shouldUpdateTransactionWithoutQuotaCheckWhenCustomerIsSame() {
+        // EN: Existing record already belongs to "Camila Torres".
+        // ES: El registro existente ya pertenece a "Camila Torres".
+        Transaction existing = new Transaction();
+        existing.setAmountInPesos(10000);
+        existing.setMerchant("Old Merchant");
+        existing.setCustomerName("Camila Torres");
+        existing.setCustomerNameNormalized("camila torres");
+        existing.setTransactionDate(LocalDateTime.of(2026, 3, 1, 10, 0));
+
+        when(transactionRepository.findById(5)).thenReturn(Optional.of(existing));
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(existing);
+        when(transactionMapper.toResponse(existing)).thenReturn(
+                new TransactionResponse(5, 20000, "Supermercado Lider", "Camila Torres", transactionRequest.transactionDate())
+        );
+
+        TransactionResponse response = transactionService.updateTransaction(5, transactionRequest);
+
+        // EN: Same customer name → count query must NOT be issued (no extra DB round-trip).
+        // ES: Mismo nombre de cliente → la consulta de conteo NO debe emitirse (sin viaje extra a la BD).
+        verify(transactionRepository, never()).countByCustomerNameNormalized(any());
+        assertThat(response.id()).isEqualTo(5);
+    }
+
+    /**
+     * EN: Verifies that updateTransaction re-checks the quota when the customer name changes
+     *     and allows the update if the new customer still has available capacity.
+     *
+     * ES: Verifica que updateTransaction re-verifica la cuota cuando el nombre del cliente cambia
+     *     y permite la actualización si el nuevo cliente aún tiene capacidad disponible.
+     */
+    @Test
+    void shouldUpdateTransactionWhenCustomerChangesAndNewCustomerHasCapacity() {
+        // EN: Existing record belongs to "Jose Perez"; request reassigns it to "Camila Torres".
+        // ES: El registro existente pertenece a "Jose Perez"; la solicitud lo reasigna a "Camila Torres".
+        Transaction existing = new Transaction();
+        existing.setAmountInPesos(10000);
+        existing.setMerchant("Old Merchant");
+        existing.setCustomerName("Jose Perez");
+        existing.setCustomerNameNormalized("jose perez");
+        existing.setTransactionDate(LocalDateTime.of(2026, 3, 1, 10, 0));
+
+        when(transactionRepository.findById(5)).thenReturn(Optional.of(existing));
+        when(transactionRepository.countByCustomerNameNormalized("camila torres")).thenReturn(5L);
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(existing);
+        when(transactionMapper.toResponse(existing)).thenReturn(
+                new TransactionResponse(5, 20000, "Supermercado Lider", "Camila Torres", transactionRequest.transactionDate())
+        );
+
+        TransactionResponse response = transactionService.updateTransaction(5, transactionRequest);
+
+        // EN: Customer changed → quota must have been checked for the new customer name.
+        // ES: Cliente cambió → la cuota debe haber sido verificada para el nuevo nombre de cliente.
+        verify(transactionRepository).countByCustomerNameNormalized("camila torres");
+        assertThat(response.id()).isEqualTo(5);
+    }
+
+    /**
+     * EN: Verifies that updateTransaction throws {@link BusinessRuleException} when the
+     *     customer name changes to a Tenpista who has already reached the 100-transaction limit.
+     *     The existing record must not be modified (save() must not be called).
+     *
+     * ES: Verifica que updateTransaction lanza {@link BusinessRuleException} cuando el nombre
+     *     del cliente cambia a un Tenpista que ya alcanzó el límite de 100 transacciones.
+     *     El registro existente no debe modificarse (save() no debe llamarse).
+     */
+    @Test
+    void shouldRejectUpdateWhenNewCustomerHasReachedQuota() {
+        Transaction existing = new Transaction();
+        existing.setAmountInPesos(10000);
+        existing.setMerchant("Old Merchant");
+        existing.setCustomerName("Jose Perez");
+        existing.setCustomerNameNormalized("jose perez");
+        existing.setTransactionDate(LocalDateTime.of(2026, 3, 1, 10, 0));
+
+        when(transactionRepository.findById(5)).thenReturn(Optional.of(existing));
+        when(transactionRepository.countByCustomerNameNormalized("camila torres")).thenReturn(100L);
+
+        assertThatThrownBy(() -> transactionService.updateTransaction(5, transactionRequest))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessage("A Tenpista can only have up to 100 transactions.");
+
+        // EN: Quota exceeded → save() must never be called; the record remains unchanged.
+        // ES: Cuota excedida → save() nunca debe llamarse; el registro permanece sin cambios.
+        verify(transactionRepository, never()).save(any(Transaction.class));
+    }
+
+    // ── Delete Transaction Tests ───────────────────────────────────────────────────────────
+
+    /**
+     * EN: Verifies that deleteTransaction loads the record and then calls repository.delete()
+     *     when the id exists.
+     *
+     * ES: Verifica que deleteTransaction carga el registro y luego llama a repository.delete()
+     *     cuando el id existe.
+     */
+    @Test
+    void shouldDeleteTransactionSuccessfully() {
+        Transaction existing = new Transaction();
+        existing.setAmountInPesos(5000);
+        existing.setMerchant("Farmacia");
+        existing.setCustomerName("Camila Torres");
+        existing.setTransactionDate(LocalDateTime.of(2026, 3, 6, 9, 0));
+
+        when(transactionRepository.findById(7)).thenReturn(Optional.of(existing));
+
+        transactionService.deleteTransaction(7);
+
+        // EN: The exact entity loaded from the repository must be passed to delete().
+        // ES: La entidad exacta cargada del repositorio debe pasarse a delete().
+        verify(transactionRepository).delete(existing);
+    }
+
+    /**
+     * EN: Verifies that deleteTransaction throws {@link ResourceNotFoundException} when the
+     *     requested id does not exist, and that delete() is never called in that case.
+     *
+     * ES: Verifica que deleteTransaction lanza {@link ResourceNotFoundException} cuando el
+     *     id solicitado no existe, y que delete() nunca se llama en ese caso.
+     */
+    @Test
+    void shouldThrowWhenDeletingNonExistentTransaction() {
+        when(transactionRepository.findById(99)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> transactionService.deleteTransaction(99))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Transaction with id 99 was not found.");
+
+        // EN: Guard: delete() must not be called when the record does not exist.
+        // ES: Guardia: delete() no debe llamarse cuando el registro no existe.
+        verify(transactionRepository, never()).delete(any(Transaction.class));
+    }
+
     // ── Amount Range Tests ────────────────────────────────────────────────────────────────
 
     /**

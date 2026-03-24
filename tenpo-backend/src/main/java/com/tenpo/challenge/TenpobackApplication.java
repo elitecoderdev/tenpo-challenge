@@ -2,6 +2,7 @@ package com.tenpo.challenge;
 
 import com.tenpo.challenge.config.CorsProperties;
 import com.tenpo.challenge.rate.RateLimitProperties;
+import com.tenpo.challenge.security.ApiKeyProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -35,7 +36,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
  *     las restricciones declaradas con anotaciones Jakarta Bean Validation.
  */
 @SpringBootApplication
-@EnableConfigurationProperties({CorsProperties.class, RateLimitProperties.class})
+@EnableConfigurationProperties({CorsProperties.class, RateLimitProperties.class, ApiKeyProperties.class})
 public class TenpobackApplication {
 
     /**

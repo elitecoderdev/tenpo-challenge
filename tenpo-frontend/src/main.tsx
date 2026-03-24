@@ -26,6 +26,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App.tsx'
+import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 import './index.css'
 
 /**
@@ -80,9 +81,17 @@ const queryClient = new QueryClient({
 //     siempre contiene <div id="root"></div>; un elemento faltante es una mala configuración.
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {/* EN: QueryClientProvider makes the query client available via the useQueryClient hook in any child component. / ES: QueryClientProvider hace que el cliente de consulta esté disponible via el hook useQueryClient en cualquier componente hijo. */}
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
+    {/* EN: ErrorBoundary catches any unhandled render errors and shows a recovery UI
+            instead of a blank white screen. Network/mutation errors are handled by
+            React Query and displayed inline — this is the last-resort safety net.
+        ES: ErrorBoundary captura cualquier error de renderizado no manejado y muestra una UI
+            de recuperación en lugar de una pantalla blanca. Los errores de red/mutación son
+            manejados por React Query y mostrados inline — este es el último recurso de seguridad. */}
+    <ErrorBoundary>
+      {/* EN: QueryClientProvider makes the query client available via the useQueryClient hook in any child component. / ES: QueryClientProvider hace que el cliente de consulta esté disponible via el hook useQueryClient en cualquier componente hijo. */}
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )

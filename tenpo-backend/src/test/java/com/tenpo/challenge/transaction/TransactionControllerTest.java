@@ -1,9 +1,12 @@
 package com.tenpo.challenge.transaction;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -11,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tenpo.challenge.shared.api.ApiErrorFactory;
 import com.tenpo.challenge.shared.exception.GlobalExceptionHandler;
+import com.tenpo.challenge.shared.exception.ResourceNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -185,5 +189,92 @@ class TransactionControllerTest {
                 // ES: El error de campo debe identificar específicamente "amountInPesos" para que
                 //     el frontend pueda mostrar el mensaje de error junto al campo de formulario correcto.
                 .andExpect(jsonPath("$.fieldErrors[0].field").value("amountInPesos"));
+    }
+
+    // ── GET /{id} Tests ───────────────────────────────────────────────────────────────────
+
+    /**
+     * EN: Verifies that GET /api/transactions/{id} returns HTTP 200 and the matching
+     *     transaction body when the id exists.
+     *
+     * ES: Verifica que GET /api/transactions/{id} devuelva HTTP 200 y el cuerpo de la
+     *     transacción correspondiente cuando el id existe.
+     */
+    @Test
+    void shouldReturnTransactionById() throws Exception {
+        when(transactionService.getTransaction(10)).thenReturn(
+                new TransactionResponse(10, 3000, "Farmacia", "Camila Torres", LocalDateTime.of(2026, 3, 7, 8, 0))
+        );
+
+        mockMvc.perform(get("/api/transactions/10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(10))
+                .andExpect(jsonPath("$.merchant").value("Farmacia"));
+    }
+
+    /**
+     * EN: Verifies that GET /api/transactions/{id} returns HTTP 404 when the id does
+     *     not exist, and that the ApiError body contains the correct status field.
+     *
+     * ES: Verifica que GET /api/transactions/{id} devuelva HTTP 404 cuando el id no
+     *     existe, y que el cuerpo ApiError contenga el campo de estado correcto.
+     */
+    @Test
+    void shouldReturnNotFoundForUnknownId() throws Exception {
+        when(transactionService.getTransaction(999))
+                .thenThrow(new ResourceNotFoundException("Transaction with id 999 was not found."));
+
+        mockMvc.perform(get("/api/transactions/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    // ── PUT /{id} Tests ───────────────────────────────────────────────────────────────────
+
+    /**
+     * EN: Verifies that PUT /api/transactions/{id} returns HTTP 200 and the updated
+     *     transaction body when the service successfully processes the update.
+     *
+     * ES: Verifica que PUT /api/transactions/{id} devuelva HTTP 200 y el cuerpo de la
+     *     transacción actualizada cuando el servicio procesa correctamente la actualización.
+     */
+    @Test
+    void shouldUpdateTransactionAndReturnOk() throws Exception {
+        when(transactionService.updateTransaction(any(Integer.class), any(TransactionRequest.class))).thenReturn(
+                new TransactionResponse(10, 25000, "Supermercado Lider", "Camila Torres", LocalDateTime.of(2026, 3, 7, 11, 30))
+        );
+
+        mockMvc.perform(put("/api/transactions/10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "amountInPesos": 25000,
+                                  "merchant": "Supermercado Lider",
+                                  "customerName": "Camila Torres",
+                                  "transactionDate": "2026-03-07T11:30:00"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.amountInPesos").value(25000))
+                .andExpect(jsonPath("$.id").value(10));
+    }
+
+    // ── DELETE /{id} Tests ────────────────────────────────────────────────────────────────
+
+    /**
+     * EN: Verifies that DELETE /api/transactions/{id} returns HTTP 204 No Content
+     *     and delegates to the service with the correct id.
+     *
+     * ES: Verifica que DELETE /api/transactions/{id} devuelva HTTP 204 No Content
+     *     y delegue al servicio con el id correcto.
+     */
+    @Test
+    void shouldDeleteTransactionAndReturnNoContent() throws Exception {
+        mockMvc.perform(delete("/api/transactions/10"))
+                .andExpect(status().isNoContent());
+
+        // EN: Confirm the controller delegated to the service with the path variable id.
+        // ES: Confirmamos que el controlador delegó al servicio con el id de la variable de ruta.
+        verify(transactionService).deleteTransaction(10);
     }
 }

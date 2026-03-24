@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import dayjs from 'dayjs'
 import { formatCLP } from '../../lib/formatters'
 import type { Transaction } from './types'
@@ -85,7 +86,13 @@ const getInitials = (name: string): string => {
  * Design — SOLID:
  *   SRP : Responsible only for rendering the list and individual cards; no data fetching or mutation.
  */
-export function TransactionList({
+// EN: memo prevents re-renders when parent App re-renders due to unrelated state changes
+//     (toast, serverError, isFetching). The component only re-renders when its own props change.
+//     This is effective because App wraps all callbacks with useCallback, keeping references stable.
+// ES: memo previene re-renders cuando el padre App se re-renderiza por cambios de estado no relacionados
+//     (toast, serverError, isFetching). El componente solo re-renderiza cuando sus propias props cambian.
+//     Esto es efectivo porque App envuelve todos los callbacks con useCallback, manteniendo referencias estables.
+export const TransactionList = memo(function TransactionList({
   activeTransactionId,
   onDelete,
   onEdit,
@@ -197,4 +204,4 @@ export function TransactionList({
       })}
     </div>
   )
-}
+})

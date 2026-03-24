@@ -12,6 +12,7 @@ import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -48,6 +49,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *   DIP : All collaborators (limiter, resolver, factory, mapper) injected via constructor.
  */
 @Component
+@Order(2)
 public class RateLimitFilter extends OncePerRequestFilter {
 
     // EN: All collaborators are injected via constructor following Dependency Inversion.

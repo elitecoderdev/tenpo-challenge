@@ -42,7 +42,10 @@ import org.springframework.test.web.servlet.MockMvc;
         // ES: Sobreescribimos la capacidad para que esta prueba no dependa del valor predeterminado de application.yml.
         //     3 es el límite especificado por el challenge.
         "app.rate-limit.capacity=3",
-        "app.rate-limit.duration=PT1M"
+        "app.rate-limit.duration=PT1M",
+        // EN: Pin the API key so requests can pass the authentication filter during this test.
+        // ES: Fijamos la API key para que las solicitudes puedan pasar el filtro de autenticación durante esta prueba.
+        "app.security.api-key=test-rate-limit-key"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -66,12 +69,20 @@ class RateLimitFilterIntegrationTest {
      *     El encabezado X-Rate-Limit-Limit siempre debe ser igual a la capacidad configurada (3).
      *     La respuesta 429 debe incluir Retry-After y un cuerpo ApiError estructurado con estado 429.
      */
+    // EN: The API key must match the 'app.security.api-key' property override above.
+    // ES: La API key debe coincidir con la sobreescritura de la propiedad 'app.security.api-key' de arriba.
+    private static final String TEST_API_KEY = "test-rate-limit-key";
+
     @Test
     void shouldBlockFourthRequestWithinTheSameMinute() throws Exception {
         // EN: Requests 1, 2, and 3 — all within the allowed window. Each must return 200.
+        //     The X-API-Key header is required because ApiKeyAuthFilter runs before this filter.
         // ES: Solicitudes 1, 2 y 3 — todas dentro de la ventana permitida. Cada una debe devolver 200.
+        //     El encabezado X-API-Key es requerido porque ApiKeyAuthFilter corre antes que este filtro.
         for (int requestNumber = 0; requestNumber < 3; requestNumber++) {
-            mockMvc.perform(get("/api/transactions").header("X-Forwarded-For", "10.0.0.1"))
+            mockMvc.perform(get("/api/transactions")
+                            .header("X-Forwarded-For", "10.0.0.1")
+                            .header("X-API-Key", TEST_API_KEY))
                     .andExpect(status().isOk())
                     .andExpect(header().string("X-Rate-Limit-Limit", "3"));
         }
@@ -82,7 +93,9 @@ class RateLimitFilterIntegrationTest {
         // ES: Solicitud 4 — la ventana está agotada; debe ser rechazada con 429.
         //     Retry-After debe ser 60 segundos (la duración de la ventana en segundos).
         //     El cuerpo de la respuesta debe ser un JSON ApiError válido con estado 429.
-        mockMvc.perform(get("/api/transactions").header("X-Forwarded-For", "10.0.0.1"))
+        mockMvc.perform(get("/api/transactions")
+                        .header("X-Forwarded-For", "10.0.0.1")
+                        .header("X-API-Key", TEST_API_KEY))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().string("Retry-After", "60"))
                 .andExpect(jsonPath("$.status").value(429));

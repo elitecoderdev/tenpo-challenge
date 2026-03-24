@@ -21,7 +21,7 @@
  *   DIP : Depends on abstract query/mutation helpers, not on Axios directly.
  */
 
-import { useDeferredValue, useEffect, useRef, useState, useTransition } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import dayjs from 'dayjs'
@@ -247,35 +247,40 @@ function App() {
 
   // ── Derived State ────────────────────────────────────────────────────────────────────────
 
-  // EN: Apply the deferred customer name filter. Uses toLowerCase on both sides for
-  //     case-insensitive matching. All filtering is client-side — no extra API requests.
-  // ES: Aplicamos el filtro de nombre de cliente diferido. Usa toLowerCase en ambos lados para
-  //     coincidencia insensible a mayúsculas. Todo el filtrado es del lado del cliente — sin solicitudes API adicionales.
-  const visibleTransactions = transactions.filter((transaction) =>
-    transaction.customerName
-      .toLowerCase()
-      .includes(deferredCustomerFilter.trim().toLowerCase()),
+  // EN: Apply the deferred customer name filter. useMemo prevents recomputation when unrelated
+  //     state changes (toast, serverError, isCreateModalOpen) trigger a parent re-render.
+  //     The filter only recalculates when `transactions` or `deferredCustomerFilter` actually change.
+  // ES: Aplicamos el filtro de nombre de cliente diferido. useMemo previene el recalculo cuando
+  //     cambios de estado no relacionados (toast, serverError, isCreateModalOpen) disparan un
+  //     re-render del padre. El filtro solo recalcula cuando `transactions` o `deferredCustomerFilter` cambian.
+  const visibleTransactions = useMemo(
+    () =>
+      transactions.filter((transaction) =>
+        transaction.customerName
+          .toLowerCase()
+          .includes(deferredCustomerFilter.trim().toLowerCase()),
+      ),
+    [transactions, deferredCustomerFilter],
   )
 
-  // EN: Aggregate stats computed from the currently visible (filtered) transaction set.
-  //     These update instantly when the filter changes because they are derived values.
-  // ES: Estadísticas agregadas calculadas del conjunto de transacciones visibles (filtrado) actualmente.
-  //     Estas se actualizan instantáneamente cuando el filtro cambia porque son valores derivados.
-  const totalAmount = visibleTransactions.reduce(
-    (sum, transaction) => sum + transaction.amountInPesos,
-    0,
+  // EN: Aggregate stats memoized independently so each stat re-renders only when the
+  //     visible list actually changes — not on every keystroke or unrelated state update.
+  // ES: Estadísticas agregadas memoizadas independientemente para que cada stat re-renderice
+  //     solo cuando la lista visible realmente cambia — no en cada tecla o actualización de
+  //     estado no relacionada.
+  const totalAmount = useMemo(
+    () => visibleTransactions.reduce((sum, t) => sum + t.amountInPesos, 0),
+    [visibleTransactions],
   )
 
-  // EN: Count unique customers by normalizing names to lowercase before inserting into a Set.
-  //     This prevents "Camila Torres" and "camila torres" from counting as two different customers.
-  // ES: Contamos clientes únicos normalizando los nombres a minúsculas antes de insertar en un Set.
-  //     Esto previene que "Camila Torres" y "camila torres" cuenten como dos clientes diferentes.
-  const uniqueCustomers = new Set(
-    visibleTransactions.map((transaction) => transaction.customerName.toLowerCase()),
-  ).size
+  const uniqueCustomers = useMemo(
+    () =>
+      new Set(visibleTransactions.map((t) => t.customerName.toLowerCase())).size,
+    [visibleTransactions],
+  )
 
-  // EN: The first transaction in the visible list is the most recent one (list is sorted desc by date).
-  // ES: La primera transacción en la lista visible es la más reciente (la lista está ordenada desc por fecha).
+  // EN: Array access is O(1) — no useMemo needed; visibleTransactions is already memoized above.
+  // ES: El acceso al array es O(1) — no se necesita useMemo; visibleTransactions ya está memoizado arriba.
   const latestTransaction = visibleTransactions[0]
 
   // ── Toast Helper ─────────────────────────────────────────────────────────────────────────
@@ -443,13 +448,20 @@ function App() {
    *     Limpia cualquier error del servidor de una mutación anterior, cierra el modal de creación
    *     si está abierto, y establece activeTransaction (diferido para evitar bloquear la animación del clic).
    */
-  const handleEdit = (transaction: Transaction) => {
+  // EN: useCallback stabilises these handlers so React.memo on child components (TransactionList,
+  //     TransactionForm) can short-circuit re-renders caused by unrelated App state changes
+  //     (toast, serverError, isFetching). Without stable references, memo has no effect.
+  // ES: useCallback estabiliza estos handlers para que React.memo en los componentes hijos
+  //     (TransactionList, TransactionForm) pueda cortocircuitar re-renders causados por cambios
+  //     de estado no relacionados en App (toast, serverError, isFetching). Sin referencias
+  //     estables, memo no tiene efecto.
+  const handleEdit = useCallback((transaction: Transaction) => {
     setServerError(null)
     startTransition(() => {
       setIsCreateModalOpen(false)
       setActiveTransaction(transaction)
     })
-  }
+  }, [startTransition])
 
   /**
    * EN: Switch to create mode: clear the active transaction and open the create modal.
@@ -458,13 +470,13 @@ function App() {
    * ES: Cambiamos al modo de creación: limpiamos la transacción activa y abrimos el modal de creación.
    *     Limpiar activeTransaction previene que el estado de edición obsoleto se filtre al formulario del modal.
    */
-  const handleCreateMode = () => {
+  const handleCreateMode = useCallback(() => {
     setServerError(null)
     startTransition(() => {
       setActiveTransaction(null)
       setIsCreateModalOpen(true)
     })
-  }
+  }, [startTransition])
 
   /**
    * EN: Close the create modal and clear any server error.
@@ -473,20 +485,20 @@ function App() {
    * ES: Cerramos el modal de creación y limpiamos cualquier error del servidor.
    *     No toca activeTransaction — el estado del panel lateral es independiente.
    */
-  const handleCloseCreateModal = () => {
+  const handleCloseCreateModal = useCallback(() => {
     setServerError(null)
     setIsCreateModalOpen(false)
-  }
+  }, [])
 
   /**
    * EN: Close the side-panel editor by clearing activeTransaction.
    *
    * ES: Cerramos el editor del panel lateral limpiando activeTransaction.
    */
-  const handleCloseEditor = () => {
+  const handleCloseEditor = useCallback(() => {
     setServerError(null)
     setActiveTransaction(null)
-  }
+  }, [])
 
   /**
    * EN: Confirm deletion via window.confirm, then fire the delete mutation.
@@ -497,7 +509,7 @@ function App() {
    *     Usando async/await para que cualquier rechazo no manejado de mutateAsync aparezca
    *     en las herramientas dev del navegador en lugar de ser silenciosamente ignorado.
    */
-  const handleDelete = async (transaction: Transaction) => {
+  const handleDelete = useCallback(async (transaction: Transaction) => {
     // EN: Native confirm dialog — simple and accessible; replaced by a custom dialog in production.
     // ES: Diálogo de confirmación nativo — simple y accesible; reemplazado por un diálogo personalizado en producción.
     if (
@@ -509,7 +521,7 @@ function App() {
     }
 
     await deleteMutation.mutateAsync(transaction.id)
-  }
+  }, [deleteMutation])
 
   /**
    * EN: Unified submit handler passed to both the create-modal form and the edit panel form.
@@ -520,7 +532,7 @@ function App() {
    *     Se bifurca en activeTransaction: si está establecido → actualizar; si es null → crear.
    *     TransactionForm llama a esto con el payload validado y normalizado en forma.
    */
-  const handleSubmit = async (payload: TransactionPayload) => {
+  const handleSubmit = useCallback(async (payload: TransactionPayload) => {
     if (activeTransaction) {
       await updateMutation.mutateAsync({
         transactionId: activeTransaction.id,
@@ -530,7 +542,7 @@ function App() {
     }
 
     await createMutation.mutateAsync(payload)
-  }
+  }, [activeTransaction, createMutation, updateMutation])
 
   // ── Render ───────────────────────────────────────────────────────────────────────────────
 

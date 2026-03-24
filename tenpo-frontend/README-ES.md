@@ -15,8 +15,9 @@ límite de tasa por cliente del challenge.
 4. [Estrategia de cache con React Query](#4-estrategia-de-cache-con-react-query)
 5. [Reglas de validación](#5-reglas-de-validación)
 6. [Análisis DRY](#6-análisis-dry)
-7. [Notas de rendimiento](#7-notas-de-rendimiento)
-8. [Configuración de runtime](#8-configuración-de-runtime)
+7. [Autenticación por API Key](#7-autenticación-por-api-key)
+8. [Notas de rendimiento](#7b-notas-de-rendimiento)
+9. [Configuración de runtime](#8-configuración-de-runtime)
 9. [Desarrollo local](#9-desarrollo-local)
 10. [Docker](#10-docker)
 11. [Flujo de QA manual](#11-flujo-de-qa-manual)
@@ -227,7 +228,23 @@ Los tres handlers `onError` de mutación llaman a `extractApiError()` → `norma
 
 ---
 
-## 7. Notas de rendimiento
+## 7. Autenticación por API Key
+
+El frontend lee la API key desde la variable de entorno `VITE_API_KEY` (valor por defecto: `tenpo-dev-key`). La instancia de Axios en `src/app/api.ts` agrega el header `X-API-Key` a **cada solicitud** automáticamente mediante un interceptor de request.
+
+```
+VITE_API_KEY está definido (ej. en .env)
+  → usar ese valor como header X-API-Key
+
+VITE_API_KEY no está definido
+  → usar "tenpo-dev-key" como valor por defecto
+```
+
+El archivo `.env.example` incluye `VITE_API_KEY=tenpo-dev-key`. Define esta variable antes de ejecutar en un entorno donde el backend usa una clave diferente.
+
+---
+
+## 7b. Notas de rendimiento
 
 | Técnica | Dónde | Efecto |
 |---|---|---|
@@ -240,6 +257,10 @@ Los tres handlers `onError` de mutación llaman a `extractApiError()` → `norma
 | El hue del comercio se calcula, no se almacena | `TransactionList.tsx` | `stringToHue()` corre en render; no se necesita campo extra en la API |
 | Fuentes auto-alojadas (`@fontsource`) | `main.tsx` | Funciona offline y en Docker sin CDN |
 | `react-hook-form` | `TransactionForm.tsx` | Inputs no controlados con mínimos re-renders |
+| `useMemo` para valores derivados | `App.tsx` | `visibleTransactions`, `totalAmount`, `uniqueCustomers` solo se recomputan cuando cambian sus dependencias |
+| `useCallback` para event handlers | `App.tsx` | Referencias de función estables que evitan re-renders innecesarios en componentes hijos |
+| `React.memo` en lista y formulario | `TransactionList`, `TransactionForm` | Los componentes omiten el re-render cuando sus props no cambian |
+| `manualChunks` en `vite.config.ts` | Salida del build | Librerías de vendor divididas en `vendor-react`, `vendor-query`, `vendor-utils`, `vendor-forms` — mejor aprovechamiento del cache del navegador entre deploys |
 
 ---
 
@@ -249,6 +270,7 @@ Los tres handlers `onError` de mutación llaman a `extractApiError()` → `norma
 |---|---|---|
 | `FRONTEND_PORT` | Puerto del host para el contenedor | `3000` |
 | `VITE_API_BASE_URL` | URL base para el build de producción | `""` (usa `/api` relativo) |
+| `VITE_API_KEY` | API key enviada como `X-API-Key` en cada solicitud | `tenpo-dev-key` |
 | `FRONTEND_IMAGE_NAME` | Nombre de la imagen Docker | `tenpo-frontend` |
 | `IMAGE_TAG` | Tag de la imagen Docker | `latest` |
 

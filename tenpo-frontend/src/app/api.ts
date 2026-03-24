@@ -18,6 +18,19 @@ import axios from 'axios'
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() || '/api'
 
 /**
+ * EN: API key sent in the X-API-Key header on every request.
+ *     Read from VITE_API_KEY at build time. Falls back to the backend's development
+ *     default ('tenpo-dev-key') so the app works out of the box without a .env file
+ *     in local development. Always override via VITE_API_KEY in production.
+ *
+ * ES: API key enviada en el encabezado X-API-Key en cada solicitud.
+ *     Leída desde VITE_API_KEY en tiempo de compilación. Cae en el valor de desarrollo
+ *     predeterminado del backend ('tenpo-dev-key') para que la app funcione sin un
+ *     archivo .env en desarrollo local. Siempre sobreescribir via VITE_API_KEY en producción.
+ */
+const apiKey = import.meta.env.VITE_API_KEY?.trim() || 'tenpo-dev-key'
+
+/**
  * EN: Shared Axios instance used by all API call functions in the application.
  *     Centralizing the instance here means:
  *       - The base URL is configured in one place (DRY principle).
@@ -40,5 +53,10 @@ export const apiClient = axios.create({
     // EN: Default Content-Type for all requests; can be overridden per-call if needed.
     // ES: Content-Type predeterminado para todas las solicitudes; puede sobreescribirse por llamada si se necesita.
     'Content-Type': 'application/json',
+    // EN: API key required by the backend ApiKeyAuthFilter for every /api/** request.
+    //     Centralised here so every Axios call sends it automatically without repetition.
+    // ES: API key requerida por el ApiKeyAuthFilter del backend para cada solicitud /api/**.
+    //     Centralizada aquí para que cada llamada Axios la envíe automáticamente sin repetición.
+    'X-API-Key': apiKey,
   },
 })

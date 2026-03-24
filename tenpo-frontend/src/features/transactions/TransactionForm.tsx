@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useEffect } from 'react'
+import { memo, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import {
   getInitialFormValues,
@@ -59,7 +59,11 @@ type TransactionFormProps = {
  *   SRP : Owns only form state and rendering; no API calls or cache management.
  *   OCP : New fields can be added by extending the schema and adding JSX — no structural change needed.
  */
-export function TransactionForm({
+// EN: memo prevents re-renders when parent App re-renders for unrelated reasons (toast, isFetching, etc.).
+//     Stable prop references via useCallback in App are required for memo to be effective.
+// ES: memo previene re-renders cuando el padre App se re-renderiza por razones no relacionadas (toast, isFetching, etc.).
+//     Referencias de props estables via useCallback en App son necesarias para que memo sea efectivo.
+export const TransactionForm = memo(function TransactionForm({
   activeTransaction,
   cancelLabel,
   isPending,
@@ -280,4 +284,4 @@ export function TransactionForm({
       </div>
     </form>
   )
-}
+})

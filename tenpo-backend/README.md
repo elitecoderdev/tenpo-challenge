@@ -16,9 +16,10 @@ service with structured error handling and per-client rate limiting.
 5. [Data Model](#5-data-model)
 6. [API Summary](#6-api-summary)
 7. [Error Model](#7-error-model)
-8. [Rate Limiting](#8-rate-limiting)
-9. [SOLID Analysis](#9-solid-analysis)
-10. [Security Notes](#10-security-notes)
+8. [API Key Authentication](#8-api-key-authentication)
+9. [Rate Limiting](#8b-rate-limiting)
+10. [SOLID Analysis](#9-solid-analysis)
+11. [Security Notes](#10-security-notes)
 11. [Performance Notes](#11-performance-notes)
 12. [Configuration](#12-configuration)
 13. [Local Development](#13-local-development)
@@ -308,7 +309,55 @@ OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
 ---
 
-## 8. Rate Limiting
+## 8. API Key Authentication
+
+Every request to `/api/**` must include the `X-API-Key` header. The filter runs at `@Order(1)`, before `RateLimitFilter`.
+
+### Filter chain order
+
+```
+Request → ApiKeyAuthFilter (@Order 1) → RateLimitFilter (@Order 2) → DispatcherServlet → Controller
+```
+
+### Behavior
+
+| Scenario | Response |
+|---|---|
+| `X-API-Key` header missing | HTTP 401 — structured `ApiError` JSON body |
+| `X-API-Key` header present but wrong value | HTTP 401 — structured `ApiError` JSON body (different message) |
+| Correct key | Request continues to `RateLimitFilter` |
+
+### Bypassed paths
+
+`ApiKeyAuthFilter` does **not** apply to:
+
+- `/swagger-ui/**`
+- `/v3/api-docs/**`
+- `/actuator/**`
+
+### Configuration
+
+| Property | Env var | Default |
+|---|---|---|
+| `app.security.api-key` | `APP_API_KEY` | `tenpo-dev-key` |
+
+### Security headers
+
+The following headers are added to **every response**, including 401 responses:
+
+| Header | Value |
+|---|---|
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `DENY` |
+| `Cache-Control` | `no-store` |
+
+### Swagger UI authentication
+
+The Swagger UI (`/swagger-ui`) exposes an "Authorize" button (lock icon). Enter the API key there to test authenticated endpoints from the browser.
+
+---
+
+## 8b. Rate Limiting
 
 ### Algorithm: fixed-window counter
 
@@ -378,6 +427,7 @@ Each class has exactly one reason to change:
 
 | Concern | Implementation |
 |---|---|
+| API key auth | `ApiKeyAuthFilter` (@Order 1): every `/api/**` request requires `X-API-Key` header; 401 if missing or wrong |
 | CORS | Allowlist from env var; fail-closed if empty |
 | Input validation | Bean Validation + Zod (frontend); DB CHECK (last resort) |
 | Error info leakage | 500 handler returns generic message; no stack trace in response |
@@ -412,6 +462,7 @@ Each class has exactly one reason to change:
 | `DB_USERNAME` | Spring datasource username | `tenpo` |
 | `DB_PASSWORD` | Spring datasource password | `tenpo` |
 | `BACKEND_PORT` | Host port for the API | `8080` |
+| `APP_API_KEY` | API key required in `X-API-Key` header | `tenpo-dev-key` |
 | `APP_CORS_ALLOWED_ORIGINS` | Comma-separated browser origins | localhost defaults |
 | `APP_RATE_LIMIT_CAPACITY` | Requests per window | `3` |
 | `APP_RATE_LIMIT_DURATION` | Window duration (ISO-8601) | `PT1M` |
@@ -476,7 +527,8 @@ For the full stack (including frontend), use the root [`docker-compose.yml`](../
 | `TransactionServiceTest` | Unit | Quota boundary (99 vs 100), create/update/delete, name canonicalization, integer overflow guard |
 | `TransactionRepositoryTest` | Integration (H2) | Derived queries, `@PrePersist` hook, filter by normalized name |
 | `TransactionControllerTest` | Integration (MockMvc) | Status codes, Location header, 400 field error shape, @Max boundary |
-| `RateLimitFilterIntegrationTest` | Integration (full context) | 3-allowed + 4th-blocked, Retry-After header, 429 JSON body |
+| `RateLimitFilterIntegrationTest` | Integration (full context) | 3-allowed + 4th-blocked, Retry-After header, 429 JSON body (sends `X-API-Key` header) |
+| `ApiKeyAuthFilterIntegrationTest` | Integration (full context) | 6 cases: missing key → 401, wrong key → 401, correct key → passes, Swagger/Actuator bypassed |
 
 H2 is configured in PostgreSQL compatibility mode so JPA and Flyway behave identically to production.
 

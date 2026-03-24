@@ -33,6 +33,14 @@ springdoc:
     path: /swagger-ui
 
 app:
+  security:
+    # EN: Secret API key required in the X-API-Key header for every /api/** request.
+    #     Override via APP_API_KEY environment variable in production.
+    #     The default 'tenpo-dev-key' is intentionally weak — never use it in production.
+    # ES: API key secreta requerida en el encabezado X-API-Key para cada solicitud /api/**.
+    #     Sobreescribir via variable de entorno APP_API_KEY en producción.
+    #     El valor por defecto 'tenpo-dev-key' es intencionalmente débil — nunca usarlo en producción.
+    api-key: ${APP_API_KEY:tenpo-dev-key}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:4173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:4173,http://127.0.0.1:3000}
   rate-limit:
