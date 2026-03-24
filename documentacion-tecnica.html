@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tenpo Challenge — Documentación Técnica</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3355;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --accent3: #ff6b6b;
+      --accent4: #ffd166;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --code-bg: #12151f;
+      --get: #22c55e;
+      --post: #3b82f6;
+      --put: #f59e0b;
+      --delete: #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 260px;
+      height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 24px 0;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      padding: 0 20px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    .sidebar-logo h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+    }
+
+    .sidebar-logo p {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .nav-section {
+      padding: 4px 0;
+    }
+
+    .nav-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 20px 4px;
+    }
+
+    .nav-link {
+      display: block;
+      padding: 7px 20px;
+      color: #a0aec0;
+      text-decoration: none;
+      font-size: 13.5px;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      background: var(--surface2);
+      border-left-color: var(--accent);
+      color: var(--text);
+    }
+
+    /* ─── MAIN CONTENT ─── */
+    .main {
+      margin-left: 260px;
+      min-height: 100vh;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1a1d27 0%, #0f1117 50%, #1a1130 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 60px 60px 50px;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: rgba(108, 99, 255, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(108, 99, 255, 0.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+
+    .hero h2 {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+      background: linear-gradient(135deg, #fff 0%, #a0aec0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+
+    .hero p {
+      font-size: 17px;
+      color: var(--muted);
+      max-width: 620px;
+    }
+
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .tag {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .tag.accent { color: var(--accent); border-color: rgba(108,99,255,0.3); background: rgba(108,99,255,0.08); }
+    .tag.green { color: var(--get); border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.08); }
+    .tag.yellow { color: var(--accent4); border-color: rgba(255,209,102,0.3); background: rgba(255,209,102,0.08); }
+
+    /* ─── SECTIONS ─── */
+    .content {
+      padding: 48px 60px;
+    }
+
+    .section {
+      margin-bottom: 72px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .section-header h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .section-header .section-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ─── CARDS ─── */
+    .card-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .card-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .card p, .card li {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .card ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .card ul li::before {
+      content: '→ ';
+      color: var(--accent);
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-card .stat-value {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .stat-card .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ─── CODE BLOCKS ─── */
+    pre, code {
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #cdd6f4;
+    }
+
+    code {
+      background: rgba(108, 99, 255, 0.12);
+      color: #a5b4fc;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 13px;
+    }
+
+    pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+    }
+
+    /* ─── ENDPOINTS TABLE ─── */
+    .endpoint-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .endpoint-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: 80px 1fr auto;
+      align-items: start;
+      gap: 16px;
+    }
+
+    .method-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+
+    .method-GET { background: rgba(34,197,94,0.15); color: var(--get); border: 1px solid rgba(34,197,94,0.3); }
+    .method-POST { background: rgba(59,130,246,0.15); color: var(--post); border: 1px solid rgba(59,130,246,0.3); }
+    .method-PUT { background: rgba(245,158,11,0.15); color: var(--put); border: 1px solid rgba(245,158,11,0.3); }
+    .method-DELETE { background: rgba(239,68,68,0.15); color: var(--delete); border: 1px solid rgba(239,68,68,0.3); }
+
+    .endpoint-path {
+      font-family: monospace;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .endpoint-desc {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .endpoint-status {
+      font-size: 12px;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* ─── ARCH DIAGRAM ─── */
+    .arch-diagram {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+    }
+
+    .arch-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: wrap;
+    }
+
+    .arch-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      text-align: center;
+      min-width: 130px;
+    }
+
+    .arch-box .arch-icon { font-size: 24px; margin-bottom: 6px; }
+    .arch-box h4 { font-size: 13px; font-weight: 700; color: #fff; }
+    .arch-box p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .arch-arrow {
+      font-size: 22px;
+      color: var(--accent);
+      padding: 0 8px;
+    }
+
+    /* ─── DIVIDER ─── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 32px 0;
+    }
+
+    /* ─── INLINE INFO ─── */
+    .info-row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 8px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      align-items: start;
+    }
+
+    .info-row:last-child { border-bottom: none; }
+    .info-key { font-size: 13px; color: var(--muted); font-weight: 500; }
+    .info-value { font-size: 13px; color: var(--text); }
+
+    .info-table {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px 20px;
+      margin-bottom: 16px;
+    }
+
+    /* ─── CALLOUT ─── */
+    .callout {
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 16px 0;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      font-size: 14px;
+    }
+
+    .callout-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .callout p { color: var(--text); }
+    .callout strong { color: #fff; }
+
+    .callout.info { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25); }
+    .callout.warning { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); }
+    .callout.success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.25); }
+    .callout.danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); }
+
+    /* ─── BADGE ─── */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-blue { background: rgba(59,130,246,0.2); color: #93c5fd; }
+    .badge-green { background: rgba(34,197,94,0.2); color: #86efac; }
+    .badge-yellow { background: rgba(245,158,11,0.2); color: #fcd34d; }
+    .badge-red { background: rgba(239,68,68,0.2); color: #fca5a5; }
+    .badge-purple { background: rgba(108,99,255,0.2); color: #a5b4fc; }
+
+    /* ─── LAYER DIAGRAM ─── */
+    .layer-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .layer {
+      border-radius: 8px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .layer-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .layer-content h4 { font-size: 14px; font-weight: 700; color: #fff; }
+    .layer-content p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ─── RULE BLOCK ─── */
+    .rule-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .rule-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13.5px;
+      color: var(--text);
+    }
+
+    .rule-item strong { color: var(--accent); }
+
+    /* ─── ENTITY TABLE ─── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border-radius: 10px;
+      overflow: hidden;
+      font-size: 13.5px;
+    }
+
+    th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    td code { font-size: 12px; }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ─── ANCHOR OFFSET ─── */
+    [id] {
+      scroll-margin-top: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .hero, .content { padding: 32px 24px; }
+      .card-grid.cols-3, .card-grid.cols-4 { grid-template-columns: 1fr 1fr; }
+      .card-grid.cols-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     SIDEBAR
+═══════════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>Tenpo Challenge</h1>
+    <p>Documentación Técnica Completa</p>
+  </div>
+
+  <nav class="nav-section">
+    <div class="nav-label">Visión General</div>
+    <a class="nav-link" href="#overview">¿Qué es esto?</a>
+    <a class="nav-link" href="#stack">Stack &amp; Versiones</a>
+    <a class="nav-link" href="#structure">Estructura</a>
+  </nav>
+
+  <nav class="nav-section">
+    <div class="nav-label">Backend</div>
+    <a class="nav-link" href="#architecture">Arquitectura</a>
+    <a class="nav-link" href="#endpoints">Endpoints REST</a>
+    <a class="nav-link" href="#models">Modelos &amp; Entidades</a>
+    <a class="nav-link" href="#services">Servicios &amp; Lógica</a>
+    <a class="nav-link" href="#validation">Validaciones &amp; DTOs</a>
+    <a class="nav-link" href="#exceptions">Manejo de Errores</a>
+    <a class="nav-link" href="#security">Seguridad</a>
+    <a class="nav-link" href="#database">Base de Datos</a>
+  </nav>
+
+  <nav class="nav-section">
+    <div class="nav-label">Frontend</div>
+    <a class="nav-link" href="#frontend">React App</a>
+    <a class="nav-link" href="#frontend-state">Estado &amp; Queries</a>
+  </nav>
+
+  <nav class="nav-section">
+    <div class="nav-label">Calidad de Código</div>
+    <a class="nav-link" href="#solid">SOLID, DRY, Rendimiento</a>
+  </nav>
+
+  <nav class="nav-section">
+    <div class="nav-label">Infraestructura</div>
+    <a class="nav-link" href="#docker">Docker &amp; Compose</a>
+    <a class="nav-link" href="#config">Configuración</a>
+    <a class="nav-link" href="#tests">Tests</a>
+  </nav>
+</aside>
+
+<!-- ══════════════════════════════════════════════════════════
+     MAIN
+═══════════════════════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">Full Stack Challenge</div>
+    <h2>Tenpo Challenge<br>Documentación Técnica</h2>
+    <p>CRUD de transacciones bancarias con rate limiting, validaciones, Docker y un frontend React moderno. Todo listo para producción.</p>
+    <div class="hero-tags">
+      <span class="tag accent">Spring Boot 3.5</span>
+      <span class="tag accent">Java 17</span>
+      <span class="tag green">React 19</span>
+      <span class="tag green">TypeScript</span>
+      <span class="tag yellow">PostgreSQL 16</span>
+      <span class="tag">Docker</span>
+      <span class="tag">Flyway</span>
+      <span class="tag">OpenAPI</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══════ 1. OVERVIEW ══════ -->
+    <section class="section" id="overview">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(108,99,255,0.15);">🎯</div>
+        <div>
+          <h2>¿Qué es este proyecto?</h2>
+          <div class="section-sub">Contexto, propósito y alcance</div>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon">💡</span>
+        <p><strong>Tenpo Challenge</strong> es una aplicación full-stack de gestión de transacciones financieras. Permite crear, listar, editar y eliminar transacciones bancarias de clientes. El desafío evalúa diseño de API REST, persistencia, validaciones, rate limiting, contenedorización y calidad de código.</p>
+      </div>
+
+      <div class="card-grid cols-4" style="margin-top:20px;">
+        <div class="stat-card">
+          <div class="stat-value">5</div>
+          <div class="stat-label">Endpoints REST</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--accent2);">100</div>
+          <div class="stat-label">Txs max por cliente</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--accent4);">3</div>
+          <div class="stat-label">Req / minuto (rate limit)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--accent3);">4</div>
+          <div class="stat-label">Suites de Tests</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════ 2. STACK & VERSIONES ══════ -->
+    <section class="section" id="stack">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(0,212,170,0.15);">📦</div>
+        <div>
+          <h2>Stack &amp; Versiones</h2>
+          <div class="section-sub">Tecnologías, frameworks y librerías exactas</div>
+        </div>
+      </div>
+
+      <div class="card-grid cols-2">
+        <div class="card">
+          <h3>☕ Backend — Java / Spring Boot</h3>
+          <div class="divider"></div>
+          <div class="info-row"><span class="info-key">Java</span><span class="info-value">17 (LTS)</span></div>
+          <div class="info-row"><span class="info-key">Spring Boot</span><span class="info-value">3.5.11</span></div>
+          <div class="info-row"><span class="info-key">Spring Data JPA</span><span class="info-value">Hibernate 6 (gestionado por parent)</span></div>
+          <div class="info-row"><span class="info-key">Spring Validation</span><span class="info-value">Jakarta Bean Validation 3</span></div>
+          <div class="info-row"><span class="info-key">Spring Actuator</span><span class="info-value">Endpoints: <code>health</code>, <code>info</code></span></div>
+          <div class="info-row"><span class="info-key">Flyway</span><span class="info-value">flyway-core + flyway-database-postgresql</span></div>
+          <div class="info-row"><span class="info-key">SpringDoc OpenAPI</span><span class="info-value">2.8.16 (Swagger UI en <code>/swagger-ui</code>)</span></div>
+          <div class="info-row"><span class="info-key">Caffeine Cache</span><span class="info-value">Para rate limiter in-memory</span></div>
+          <div class="info-row"><span class="info-key">PostgreSQL driver</span><span class="info-value">Runtime scope</span></div>
+          <div class="info-row"><span class="info-key">H2 Database</span><span class="info-value">Test scope (modo PostgreSQL)</span></div>
+          <div class="info-row"><span class="info-key">Build tool</span><span class="info-value">Maven (mvnw wrapper)</span></div>
+        </div>
+
+        <div class="card">
+          <h3>⚛️ Frontend — React / TypeScript / Vite</h3>
+          <div class="divider"></div>
+          <div class="info-row"><span class="info-key">React</span><span class="info-value">19.2.0</span></div>
+          <div class="info-row"><span class="info-key">TypeScript</span><span class="info-value">~5.9.3</span></div>
+          <div class="info-row"><span class="info-key">Vite</span><span class="info-value">7.3.1 (bundler + dev server)</span></div>
+          <div class="info-row"><span class="info-key">TanStack Query</span><span class="info-value">5.90.5 (server state)</span></div>
+          <div class="info-row"><span class="info-key">Axios</span><span class="info-value">1.13.2 (HTTP client)</span></div>
+          <div class="info-row"><span class="info-key">React Hook Form</span><span class="info-value">7.66.0 (formularios)</span></div>
+          <div class="info-row"><span class="info-key">Zod</span><span class="info-value">4.1.11 (validación schema)</span></div>
+          <div class="info-row"><span class="info-key">@hookform/resolvers</span><span class="info-value">5.2.2 (bridge RHF + Zod)</span></div>
+          <div class="info-row"><span class="info-key">Day.js</span><span class="info-value">1.11.18 (fechas)</span></div>
+          <div class="info-row"><span class="info-key">Node en Docker</span><span class="info-value">22-alpine (build)</span></div>
+          <div class="info-row"><span class="info-key">Nginx</span><span class="info-value">1.27-alpine (servir estático)</span></div>
+          <div class="info-row"><span class="info-key">ESLint</span><span class="info-value">9.39.1</span></div>
+        </div>
+      </div>
+
+      <div class="card-grid cols-3" style="margin-top:16px;">
+        <div class="card">
+          <h3>🗄️ Base de Datos</h3>
+          <ul>
+            <li>PostgreSQL 16-alpine (prod)</li>
+            <li>H2 in-memory en modo PostgreSQL (tests)</li>
+            <li>Migraciones con Flyway</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>🐳 Infraestructura</h3>
+          <ul>
+            <li>Docker multi-stage builds</li>
+            <li>docker-compose root (full-stack)</li>
+            <li>Healthcheck en Postgres</li>
+            <li>Volumen persistente para datos</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>📖 Documentación API</h3>
+          <ul>
+            <li>Swagger UI en <code>/swagger-ui</code></li>
+            <li>OpenAPI 3 via SpringDoc</li>
+            <li>README detallados con cURLs</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════ 3. ESTRUCTURA ══════ -->
+    <section class="section" id="structure">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(255,209,102,0.15);">📁</div>
+        <div>
+          <h2>Estructura del Proyecto</h2>
+          <div class="section-sub">Organización de directorios y archivos clave</div>
+        </div>
+      </div>
+
+      <div class="card-grid cols-2">
+        <div>
+<pre><code>tenpo-challenge/
+├── .env.example              ← Variables de entorno globales
+├── docker-compose.yml        ← Orquestación completa
+├── README.md                 ← Documentación principal
+│
+├── tenpo-backend/            ← Módulo Java/Spring
+│   ├── pom.xml               ← Dependencias Maven
+│   ├── Dockerfile            ← Multi-stage build
+│   ├── docker-compose.yml    ← Solo backend + postgres
+│   └── src/main/java/com/tenpo/challenge/
+│       ├── TenpobackApplication.java
+│       ├── config/           ← CORS, OpenAPI, Web
+│       ├── rate/             ← Rate limiter completo
+│       ├── shared/           ← Errores, excepciones, API models
+│       └── transaction/      ← Dominio principal (CRUD)
+│           └── resources/
+│               ├── application.yml
+│               └── db/migration/V1__create_transactions.sql
+│
+└── tenpo-frontend/           ← Módulo React/Vite
+    ├── package.json
+    ├── vite.config.ts
+    ├── Dockerfile            ← Multi-stage (Node build + Nginx)
+    └── src/
+        ├── App.tsx           ← Pantalla principal, mutations
+        ├── app/api.ts        ← Cliente Axios
+        ├── components/Modal.tsx
+        ├── lib/
+        │   └── formatters.ts ← formatCLP() (DRY: formateador CLP compartido)
+        └── features/transactions/
+            ├── types.ts
+            ├── schema.ts     ← Validación Zod
+            ├── queries.ts    ← API calls + React Query
+            ├── TransactionForm.tsx
+            └── TransactionList.tsx</code></pre>
+        </div>
+
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <h3>Filosofía de organización — Backend</h3>
+            <p style="margin-bottom:8px;">Organización <strong>por feature/dominio</strong> (package by feature), no por capa técnica. Todo lo relacionado con transacciones vive en el mismo paquete.</p>
+            <div style="margin-top:10px; font-size:13px; color: var(--muted);">
+              <div style="margin-bottom:4px;"><span class="badge badge-purple">config/</span> — CORS, Swagger, WebMvcConfigurer</div>
+              <div style="margin-bottom:4px;"><span class="badge badge-red">rate/</span> — Filter, limiter, resolver, properties</div>
+              <div style="margin-bottom:4px;"><span class="badge badge-blue">shared/</span> — Errores reutilizables en toda la app</div>
+              <div><span class="badge badge-green">transaction/</span> — Entity, Repo, Service, Controller, DTOs, Mapper</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Filosofía de organización — Frontend</h3>
+            <p style="margin-bottom:8px;">Arquitectura <strong>feature-based</strong>. El estado del servidor lo maneja React Query, los formularios React Hook Form + Zod, el HTTP Axios.</p>
+            <div style="margin-top:10px; font-size:13px; color: var(--muted);">
+              <div style="margin-bottom:4px;"><span class="badge badge-blue">app/</span> — Configuración Axios (base URL, interceptors)</div>
+              <div style="margin-bottom:4px;"><span class="badge badge-green">features/transactions/</span> — Todo el dominio agrupado</div>
+              <div><span class="badge badge-purple">components/</span> — Componentes UI reutilizables (Modal)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════ 4. ARQUITECTURA ══════ -->
+    <section class="section" id="architecture">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(0,212,170,0.15);">🏗️</div>
+        <div>
+          <h2>Arquitectura</h2>
+          <div class="section-sub">Capas, patrones y flujo de datos</div>
+        </div>
+      </div>
+
+      <div class="arch-diagram" style="margin-bottom:20px;">
+        <p style="font-size:12px; color:var(--muted); margin-bottom:20px; text-align:center; text-transform:uppercase; letter-spacing:1px;">Flujo de una petición HTTP</p>
+        <div class="arch-flow">
+          <div class="arch-box">
+            <div class="arch-icon">🌐</div>
+            <h4>Cliente</h4>
+            <p>Browser / cURL</p>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box" style="border-color:rgba(239,68,68,0.4);">
+            <div class="arch-icon">🚦</div>
+            <h4>RateLimitFilter</h4>
+            <p>OncePerRequestFilter<br>429 si excede límite</p>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box" style="border-color:rgba(108,99,255,0.4);">
+            <div class="arch-icon">🎮</div>
+            <h4>Controller</h4>
+            <p>@RestController<br>Valida DTO (@Valid)</p>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box" style="border-color:rgba(0,212,170,0.4);">
+            <div class="arch-icon">⚙️</div>
+            <h4>Service</h4>
+            <p>@Transactional<br>Reglas de negocio</p>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box" style="border-color:rgba(245,158,11,0.4);">
+            <div class="arch-icon">🗄️</div>
+            <h4>Repository</h4>
+            <p>JPA / Hibernate<br>PostgreSQL</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-grid cols-2">
+        <div>
+          <h3 style="font-size:15px; margin-bottom:14px; color:#fff;">Capas del Backend</h3>
+          <div class="layer-stack">
+            <div class="layer" style="background:rgba(108,99,255,0.08); border:1px solid rgba(108,99,255,0.2);">
+              <div class="layer-num" style="background:rgba(108,99,255,0.2); color:var(--accent);">1</div>
+              <div class="layer-content">
+                <h4>Presentation Layer — Controller</h4>
+                <p>Recibe HTTP, deserializa JSON, dispara validación Bean Validation (@Valid), devuelve ResponseEntity.</p>
+              </div>
+            </div>
+            <div class="layer" style="background:rgba(0,212,170,0.08); border:1px solid rgba(0,212,170,0.2);">
+              <div class="layer-num" style="background:rgba(0,212,170,0.2); color:var(--accent2);">2</div>
+              <div class="layer-content">
+                <h4>Application Layer — Service</h4>
+                <p>Orquesta lógica de negocio: valida cuotas, sanitiza texto, maneja transaccionalidad JPA.</p>
+              </div>
+            </div>
+            <div class="layer" style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2);">
+              <div class="layer-num" style="background:rgba(245,158,11,0.2); color:var(--accent4);">3</div>
+              <div class="layer-content">
+                <h4>Data Layer — Repository</h4>
+                <p>Spring Data JPA. Extiende JpaRepository. Queries derivadas del nombre de método.</p>
+              </div>
+            </div>
+            <div class="layer" style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2);">
+              <div class="layer-num" style="background:rgba(239,68,68,0.2); color:var(--accent3);">4</div>
+              <div class="layer-content">
+                <h4>Infrastructure — PostgreSQL + Flyway</h4>
+                <p>Base de datos relacional. Migraciones versionadas. DDL gestionado por Flyway.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 style="font-size:15px; margin-bottom:14px; color:#fff;">Patrones de Diseño Utilizados</h3>
+          <div class="card-grid cols-2">
+            <div class="card">
+              <h3>Service Layer</h3>
+              <p>Toda la lógica de negocio encapsulada en TransactionService.</p>
+            </div>
+            <div class="card">
+              <h3>Repository</h3>
+              <p>Abstracción de persistencia con Spring Data JPA.</p>
+            </div>
+            <div class="card">
+              <h3>DTO / Mapper</h3>
+              <p>Request/Response DTOs separados de la entidad. Mapper como @Component.</p>
+            </div>
+            <div class="card">
+              <h3>Filter Chain</h3>
+              <p>Servlet Filter (OncePerRequestFilter) para rate limiting cross-cutting.</p>
+            </div>
+            <div class="card">
+              <h3>Factory</h3>
+              <p>ApiErrorFactory centraliza la construcción de errores HTTP estandarizados.</p>
+            </div>
+            <div class="card">
+              <h3>Fixed Window</h3>
+              <p>Algoritmo de ventana fija sincronizado para rate limiting.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════ 5. ENDPOINTS ══════ -->
+    <section class="section" id="endpoints">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(59,130,246,0.15);">🔌</div>
+        <div>
+          <h2>Endpoints REST</h2>
+          <div class="section-sub">API base: <code>http://localhost:8080/api/transactions</code> · Swagger: <code>/swagger-ui</code></div>
+        </div>
+      </div>
+
+      <div class="endpoint-list">
+        <div class="endpoint-item">
+          <span class="method-badge method-GET">GET</span>
+          <div>
+            <div class="endpoint-path">/api/transactions</div>
+            <div class="endpoint-desc">Lista todas las transacciones. Acepta query param opcional <code>?customerName=Juan</code> para filtrar por nombre normalizado (case-insensitive, trim).</div>
+            <div style="margin-top:8px;">
+              <span class="badge badge-green">200 OK</span>
+              <span style="font-size:12px; color:var(--muted); margin-left:8px;">Array de TransactionResponse, ordenado por fecha desc, id desc</span>
+            </div>
+          </div>
+          <span class="endpoint-status">200 OK</span>
+        </div>
+
+        <div class="endpoint-item">
+          <span class="method-badge method-GET">GET</span>
+          <div>
+            <div class="endpoint-path">/api/transactions/{id}</div>
+            <div class="endpoint-desc">Obtiene una transacción específica por su ID entero.</div>
+            <div style="margin-top:8px;">
+              <span class="badge badge-green">200 OK</span>
+              <span class="badge badge-red" style="margin-left:6px;">404 Not Found</span>
+            </div>
+          </div>
+          <span class="endpoint-status">200 / 404</span>
+        </div>
+
+        <div class="endpoint-item">
+          <span class="method-badge method-POST">POST</span>
+          <div>
+            <div class="endpoint-path">/api/transactions</div>
+            <div class="endpoint-desc">Crea una nueva transacción. Valida el body con Bean Validation. Verifica cuota de 100 transacciones por cliente. Retorna header <code>Location: /api/transactions/{id}</code>.</div>
+            <div style="margin-top:8px;">
+              <span class="badge badge-blue">201 Created</span>
+              <span class="badge badge-red" style="margin-left:6px;">400 Validation</span>
+              <span class="badge badge-yellow" style="margin-left:6px;">409 Quota</span>
+              <span class="badge badge-red" style="margin-left:6px;">429 Rate Limit</span>
+            </div>
+          </div>
+          <span class="endpoint-status">201 Created</span>
+        </div>
+
+        <div class="endpoint-item">
+          <span class="method-badge method-PUT">PUT</span>
+          <div>
+            <div class="endpoint-path">/api/transactions/{id}</div>
+            <div class="endpoint-desc">Actualiza todos los campos de una transacción existente. Si el nombre del cliente cambia, verifica cuota. Reemplaza el registro completo.</div>
+            <div style="margin-top:8px;">
+              <span class="badge badge-green">200 OK</span>
+              <span class="badge badge-red" style="margin-left:6px;">404 Not Found</span>
+              <span class="badge badge-yellow" style="margin-left:6px;">409 Quota</span>
+            </div>
+          </div>
+          <span class="endpoint-status">200 / 404</span>
+        </div>
+
+        <div class="endpoint-item">
+          <span class="method-badge method-DELETE">DELETE</span>
+          <div>
+            <div class="endpoint-path">/api/transactions/{id}</div>
+            <div class="endpoint-desc">Elimina una transacción. Si no existe, retorna 404. Si existe, 204 sin cuerpo.</div>
+            <div style="margin-top:8px;">
+              <span class="badge badge-green">204 No Content</span>
+              <span class="badge badge-red" style="margin-left:6px;">404 Not Found</span>
+            </div>
+          </div>
+          <span class="endpoint-status">204 / 404</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="card-grid cols-2">
+        <div>
+          <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Request Body (POST / PUT)</h3>
+<pre><code>{
+  "amountInPesos": 15000,
+  "merchant": "Supermercado Lider",
+  "customerName": "Camila Torres",
+  "transactionDate": "2026-03-07T11:30:00"
+}</code></pre>
+        </div>
+        <div>
+          <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Response Body (GET / POST / PUT)</h3>
+<pre><code>{
+  "id": 14,
+  "amountInPesos": 15000,
+  "merchant": "Supermercado Lider",
+  "customerName": "Camila Torres",
+  "transactionDate": "2026-03-07T11:30:00"
+}</code></pre>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Error Response (estructura unificada)</h3>
+<pre><code>{
+  "timestamp": "2026-03-07T00:00:00Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Validation failed for the request body.",
+  "path": "/api/transactions",
+  "fieldErrors": [
+    { "field": "amountInPesos", "message": "Transaction amount cannot be negative." },
+    { "field": "merchant",      "message": "Merchant is required." }
+  ]
+}</code></pre>
+      </div>
+
+      <div class="callout warning" style="margin-top:16px;">
+        <span class="callout-icon">⚠️</span>
+        <p><strong>Rate Limit Headers:</strong> Todas las respuestas incluyen <code>X-Rate-Limit-Limit</code>, <code>X-Rate-Limit-Remaining</code>. En 429 se incluye <code>Retry-After</code> con los segundos restantes.</p>
+      </div>
+    </section>
+
+    <!-- ══════ 6. MODELOS ══════ -->
+    <section class="section" id="models">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(245,158,11,0.15);">🗃️</div>
+        <div>
+          <h2>Modelos &amp; Entidades</h2>
+          <div class="section-sub">Entity JPA, tabla en PostgreSQL, índices</div>
+        </div>
+      </div>
+
+      <div class="card-grid cols-2">
+        <div>
+          <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Entidad <code>Transaction</code></h3>
+<pre><code>@Entity
+@Table(name = "transactions")
+public class Transaction {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(name = "amount_in_pesos", nullable = false)
+    private int amountInPesos;
+
+    @Column(nullable = false, length = 160)
+    private String merchant;
+
+    @Column(name = "customer_name",
+            nullable = false, length = 120)
+    private String customerName;          // ← valor original
+
+    @Column(name = "customer_name_normalized",
+            nullable = false, length = 120)
+    private String customerNameNormalized; // ← lowercase + trim
+
+    @Column(name = "transaction_date", nullable = false)
+    private LocalDateTime transactionDate;
+
+    @PrePersist @PreUpdate
+    void normalizeCustomerName() {
+        customerNameNormalized = canonicalize(customerName);
+    }
+
+    public static String canonicalize(String v) {
+        return v.trim()
+                .replaceAll("\\s+", " ")
+                .toLowerCase(Locale.ROOT);
+    }
+}</code></pre>
+        </div>
+        <div>
+          <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Tabla en PostgreSQL</h3>
+<pre><code>CREATE TABLE transactions (
+  id INTEGER GENERATED BY DEFAULT
+             AS IDENTITY PRIMARY KEY,
+  amount_in_pesos  INTEGER      NOT NULL
+                   CHECK (amount_in_pesos >= 0),
+  merchant         VARCHAR(160) NOT NULL,
+  customer_name    VARCHAR(120) NOT NULL,
+  customer_name_normalized VARCHAR(120) NOT NULL,
+  transaction_date TIMESTAMP   NOT NULL
+);
+
+-- Índice para filtrar/contar por cliente
+CREATE INDEX idx_transactions_customer_name_normalized
+  ON transactions (customer_name_normalized);
+
+-- Índice para ordenamiento por fecha
+CREATE INDEX idx_transactions_transaction_date
+  ON transactions (transaction_date DESC, id DESC);</code></pre>
+
+          <div class="callout success" style="margin-top:12px;">
+            <span class="callout-icon">✅</span>
+            <p><strong>Decisión de diseño:</strong> Se guarda el nombre del cliente en dos columnas: <code>customer_name</code> (valor original para mostrar) y <code>customer_name_normalized</code> (para búsquedas y conteo de cuota). Esto garantiza que "Juan Torres", "  juan torres  " y "JUAN TORRES" cuenten como el mismo cliente.</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Campos de la Entidad</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>Tipo Java</th>
+              <th>Tipo SQL</th>
+              <th>Restricciones</th>
+              <th>Notas</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>id</code></td>
+              <td>Integer</td>
+              <td>INTEGER IDENTITY</td>
+              <td>PK, auto-generado</td>
+              <td>Identity por Postgres</td>
+            </tr>
+            <tr>
+              <td><code>amountInPesos</code></td>
+              <td>int</td>
+              <td>INTEGER</td>
+              <td>NOT NULL, CHECK >= 0</td>
+              <td>En pesos chilenos</td>
+            </tr>
+            <tr>
+              <td><code>merchant</code></td>
+              <td>String</td>
+              <td>VARCHAR(160)</td>
+              <td>NOT NULL</td>
+              <td>Nombre del comercio</td>
+            </tr>
+            <tr>
+              <td><code>customerName</code></td>
+              <td>String</td>
+              <td>VARCHAR(120)</td>
+              <td>NOT NULL</td>
+              <td>Nombre para mostrar (original)</td>
+            </tr>
+            <tr>
+              <td><code>customerNameNormalized</code></td>
+              <td>String</td>
+              <td>VARCHAR(120)</td>
+              <td>NOT NULL</td>
+              <td>lowercase + trim, para filtros y cuota</td>
+            </tr>
+            <tr>
+              <td><code>transactionDate</code></td>
+              <td>LocalDateTime</td>
+              <td>TIMESTAMP</td>
+              <td>NOT NULL</td>
+              <td>Almacenado en UTC (Hibernate config)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══════ 7. SERVICIOS ══════ -->
+    <section class="section" id="services">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(34,197,94,0.15);">⚙️</div>
+        <div>
+          <h2>Servicios &amp; Lógica de Negocio</h2>
+          <div class="section-sub">TransactionService — el núcleo de la aplicación</div>
+        </div>
+      </div>
+
+      <h3 style="font-size:15px; color:#fff; margin-bottom:14px;">Reglas de Negocio</h3>
+      <div class="rule-list">
+        <div class="rule-item"><strong>Cuota de 100 transacciones:</strong> Ningún cliente puede tener más de 100 transacciones activas. La validación usa el nombre normalizado. Al crear: cuenta actual >= 100 → 409 Conflict. Al editar: si el nombre cambia, cuenta del nuevo nombre >= 100 → 409 Conflict.</div>
+        <div class="rule-item"><strong>Monto no negativo:</strong> <code>amountInPesos</code> debe ser ≥ 0. Validado en DTO (Bean Validation) y reforzado con CHECK en la base de datos.</div>
+        <div class="rule-item"><strong>Fecha no futura:</strong> <code>transactionDate</code> debe ser pasada o presente. Validada en DTO con <code>@PastOrPresent</code>.</div>
+        <div class="rule-item"><strong>Normalización de texto:</strong> Merchant y customerName son saneados: <code>trim()</code> + collapsado de espacios internos (<code>\\s+</code> → " ") antes de persistir.</div>
+        <div class="rule-item"><strong>Nombres de cliente canonicalizados:</strong> <code>customerNameNormalized</code> se recalcula automáticamente en <code>@PrePersist</code> y <code>@PreUpdate</code> mediante JPA lifecycle hooks.</div>
+        <div class="rule-item"><strong>Zonas horarias:</strong> Hibernate configurado con UTC (<code>hibernate.jdbc.time_zone: UTC</code>). Jackson no ajusta fechas al contexto. Las fechas se almacenan y devuelven en UTC.</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Implementación de métodos principales</h3>
+<pre><code>@Service
+public class TransactionService {
+    private static final int MAX_TRANSACTIONS_PER_CUSTOMER = 100;
+
+    // Lista todas o filtra por customerName (normalizado)
+    @Transactional(readOnly = true)
+    public List&lt;TransactionResponse&gt; listTransactions(String customerName) { ... }
+
+    // Crea: normaliza, valida cuota, persiste
+    @Transactional
+    public TransactionResponse createTransaction(TransactionRequest req) {
+        String sanitizedName = sanitizeText(req.customerName());
+        ensureTransactionQuota(sanitizedName, null);  // verifica cuota
+        Transaction t = new Transaction(...);
+        return mapper.toResponse(repository.save(t));
+    }
+
+    // Actualiza: si cambia el cliente, re-valida cuota
+    @Transactional
+    public TransactionResponse updateTransaction(Integer id, TransactionRequest req) {
+        Transaction existing = findOrThrow(id);
+        ensureTransactionQuota(sanitizedName, existing); // ignora si cliente no cambió
+        // actualiza campos...
+        return mapper.toResponse(repository.save(existing));
+    }
+
+    private void ensureTransactionQuota(String name, Transaction existing) {
+        String normalized = Transaction.canonicalize(name);
+        boolean clientChanged = existing == null
+            || !normalized.equals(existing.getCustomerNameNormalized());
+        if (clientChanged) {
+            long count = repository.countByCustomerNameNormalized(normalized);
+            if (count >= MAX_TRANSACTIONS_PER_CUSTOMER)
+                throw new BusinessRuleException(HttpStatus.CONFLICT,
+                    "Customer has reached the maximum of 100 transactions.");
+        }
+    }
+
+    private String sanitizeText(String v) {
+        return v.trim().replaceAll("\\s+", " ");
+    }
+}</code></pre>
+    </section>
+
+    <!-- ══════ 8. VALIDACIONES & DTOs ══════ -->
+    <section class="section" id="validation">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(108,99,255,0.15);">✅</div>
+        <div>
+          <h2>Validaciones &amp; DTOs</h2>
+          <div class="section-sub">Records Java + Bean Validation + Zod en frontend</div>
+        </div>
+      </div>
+
+      <div class="card-grid cols-2">
+        <div>
+          <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">TransactionRequest (record)</h3>
+<pre><code>public record TransactionRequest(
+    @PositiveOrZero(message = "Transaction amount cannot be negative.")
+    @Max(value = Integer.MAX_VALUE, message = "Amount is too large.")
+    long amountInPesos,  // long para recibir el rango completo
+
+    @NotBlank(message = "Merchant is required.")
+    @Size(max = 160, message = "Merchant cannot exceed 160 chars.")
+    String merchant,
+
+    @NotBlank(message = "Customer name is required.")
+    @Size(max = 120, message = "Customer name cannot exceed 120 chars.")
+    String customerName,
+
+    @NotNull(message = "Transaction date is required.")
+    @PastOrPresent(message = "Transaction date cannot be in the future.")
+    LocalDateTime transactionDate
+) {}</code></pre>
+
+          <div class="callout info" style="margin-top:12px;">
+            <span class="callout-icon">💡</span>
+            <p><strong>Detalle:</strong> <code>amountInPesos</code> se recibe como <code>long</code> en el DTO para poder validar con <code>@Max(Integer.MAX_VALUE)</code> sin overflow. El service convierte a <code>int</code> antes de persistir. Esto evita excepciones no controladas por desbordamiento.</p>
+          </div>
+        </div>
+        <div>
+          <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">TransactionResponse (record)</h3>
+<pre><code>public record TransactionResponse(
+    Integer id,
+    int amountInPesos,
+    String merchant,
+    String customerName,   // valor original (no normalizado)
+    LocalDateTime transactionDate
+) {}</code></pre>
+
+          <div style="margin-top:16px;">
+            <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">TransactionMapper</h3>
+<pre><code>@Component
+public class TransactionMapper {
+    public TransactionResponse toResponse(Transaction t) {
+        return new TransactionResponse(
+            t.getId(),
+            t.getAmountInPesos(),
+            t.getMerchant(),
+            t.getCustomerName(),
+            t.getTransactionDate()
+        );
+    }
+}</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Schema Zod (Frontend)</h3>
+<pre><code>export const transactionFormSchema = z.object({
+  amountInPesos: z.number()
+    .int('Amount must be an integer.')
+    .min(0, 'Amount cannot be negative.')
+    .max(MAX_AMOUNT_IN_PESOS, 'Amount exceeds maximum.'),
+
+  merchant: z.string().trim()
+    .min(1, 'Merchant is required.')
+    .max(160, 'Merchant cannot exceed 160 characters.'),
+
+  customerName: z.string().trim()
+    .min(1, 'Tenpista name is required.')
+    .max(120, 'Customer name cannot exceed 120 characters.'),
+
+  transactionDate: z.string()
+    .min(1, 'Transaction date is required.')
+    .refine(v => dayjs(v).isValid(), 'Use a valid date and time.')
+    .refine(v => !dayjs(v).isAfter(dayjs()), 'Date cannot be in the future.'),
+})</code></pre>
+      <div class="callout success" style="margin-top:12px;">
+        <span class="callout-icon">🔐</span>
+        <p><strong>Doble validación:</strong> Frontend (Zod + React Hook Form) para UX inmediata. Backend (Bean Validation) como fuente de verdad. La validación del servidor nunca es opcional.</p>
+      </div>
+    </section>
+
+    <!-- ══════ 9. MANEJO DE ERRORES ══════ -->
+    <section class="section" id="exceptions">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(239,68,68,0.15);">🚨</div>
+        <div>
+          <h2>Manejo de Errores</h2>
+          <div class="section-sub">Jerarquía de excepciones y GlobalExceptionHandler</div>
+        </div>
+      </div>
+
+      <div class="card-grid cols-2">
+        <div>
+          <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Jerarquía de Excepciones</h3>
+<pre><code>RuntimeException
+├── ResourceNotFoundException  → 404 Not Found
+│   └── "Transaction {id} not found."
+│
+├── BusinessRuleException      → configurable (409)
+│   └── "Customer has reached 100 transactions."
+│
+└── [Spring/Jakarta exceptions] → capturadas por GlobalExceptionHandler</code></pre>
+        </div>
+        <div>
+          <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">GlobalExceptionHandler</h3>
+<pre><code>@RestControllerAdvice
+public class GlobalExceptionHandler {
+    ResourceNotFoundException    → 404
+    BusinessRuleException        → status del exception
+    MethodArgumentNotValidException → 400 + fieldErrors
+    ConstraintViolationException    → 400 + fieldErrors
+    HttpMessageNotReadableException → 400 (JSON malformado)
+    Exception (catch-all)           → 500 (oculta detalle)
+}</code></pre>
+        </div>
+      </div>
+
+      <div class="callout info" style="margin-top:12px;">
+        <span class="callout-icon">🛡️</span>
+        <p><strong>Beneficio:</strong> El catch-all de <code>Exception.class</code> retorna 500 con mensaje genérico ("An unexpected error occurred.") sin exponer stack traces ni detalles internos al cliente. Los logs sí reciben el error completo.</p>
+      </div>
+    </section>
+
+    <!-- ══════ 10. SEGURIDAD ══════ -->
+    <section class="section" id="security">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(239,68,68,0.15);">🔒</div>
+        <div>
+          <h2>Seguridad</h2>
+          <div class="section-sub">Rate limiting, CORS, validación de entrada, headers</div>
+        </div>
+      </div>
+
+      <div class="callout warning">
+        <span class="callout-icon">⚠️</span>
+        <p><strong>Sin autenticación:</strong> La API no implementa JWT ni OAuth. Es un challenge enfocado en arquitectura y calidad de código. En producción real se añadiría Spring Security con autenticación.</p>
+      </div>
+
+      <div style="margin-top:20px;">
+        <h3 style="font-size:16px; color:#fff; margin-bottom:16px;">Rate Limiting — Algoritmo Fixed Window</h3>
+        <div class="card-grid cols-2">
+          <div class="card">
+            <h3>Configuración</h3>
+            <div class="info-row"><span class="info-key">Capacidad</span><span class="info-value">3 req / minuto (configurable via ENV)</span></div>
+            <div class="info-row"><span class="info-key">Ventana</span><span class="info-value">PT1M (ISO-8601, configurable)</span></div>
+            <div class="info-row"><span class="info-key">Ámbito</span><span class="info-value">Solo rutas <code>/api/**</code></span></div>
+            <div class="info-row"><span class="info-key">Storage</span><span class="info-value">Caffeine in-memory (no distribuido)</span></div>
+            <div class="info-row"><span class="info-key">Respuesta</span><span class="info-value">429 Too Many Requests</span></div>
+          </div>
+          <div class="card">
+            <h3>Headers devueltos</h3>
+            <div class="info-row"><span class="info-key">X-Rate-Limit-Limit</span><span class="info-value">Capacidad máxima (3)</span></div>
+            <div class="info-row"><span class="info-key">X-Rate-Limit-Remaining</span><span class="info-value">Peticiones restantes en la ventana</span></div>
+            <div class="info-row"><span class="info-key">Retry-After</span><span class="info-value">Segundos hasta reset (solo en 429)</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Implementación — Fixed Window Counter</h3>
+<pre><code>// FixedWindowCounter (clase interna en ClientRateLimiter)
+private static final class FixedWindowCounter {
+    private Instant windowStart;
+    private int consumedTokens;
+
+    synchronized RateLimitDecision consume(Instant now, int capacity, Duration duration) {
+        // ¿Estamos fuera de la ventana? → reset
+        if (windowStart == null || !now.isBefore(windowStart.plus(duration))) {
+            windowStart = now;
+            consumedTokens = 0;
+        }
+        // ¿Hay tokens disponibles?
+        if (consumedTokens < capacity) {
+            consumedTokens++;
+            return RateLimitDecision.allowed(capacity - consumedTokens, Duration.ZERO);
+        }
+        // Bloqueado: calcular retry-after
+        Duration retryAfter = Duration.between(now, windowStart.plus(duration));
+        long retryAfterSeconds = Math.max(1, (retryAfter.toMillis() + 999) / 1_000);
+        return RateLimitDecision.blocked(Duration.ofSeconds(retryAfterSeconds));
+    }
+}
+
+// Caffeine guarda un FixedWindowCounter por IP de cliente
+Cache&lt;String, FixedWindowCounter&gt; cache = Caffeine.newBuilder()
+    .expireAfterAccess(duration.multipliedBy(2))
+    .build();</code></pre>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Resolución del cliente (IP)</h3>
+<pre><code>// ClientKeyResolver — prioridad:
+1. Header "X-Forwarded-For" (detrás de proxy/load balancer)
+2. request.getRemoteAddr() (IP directa)
+3. "anonymous-client" (fallback)</code></pre>
+
+      <div class="divider"></div>
+
+      <h3 style="font-size:15px; color:#fff; margin-bottom:14px;">CORS</h3>
+      <div class="info-table">
+        <div class="info-row"><span class="info-key">Allowed Origins</span><span class="info-value">localhost:3000, :5173, :4173 — configurable con <code>APP_CORS_ALLOWED_ORIGINS</code></span></div>
+        <div class="info-row"><span class="info-key">Allowed Methods</span><span class="info-value">GET, POST, PUT, DELETE, OPTIONS</span></div>
+        <div class="info-row"><span class="info-key">Allowed Headers</span><span class="info-value">Todos (<code>*</code>)</span></div>
+        <div class="info-row"><span class="info-key">Implementación</span><span class="info-value">WebMvcConfigurer en WebConfiguration + CorsProperties (@ConfigurationProperties)</span></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="font-size:15px; color:#fff; margin-bottom:14px;">Otras medidas de seguridad</h3>
+      <div class="card-grid cols-3">
+        <div class="card">
+          <h3>Validación de input</h3>
+          <p>Bean Validation Jakarta en todos los campos del DTO. Zod en el frontend. Nunca se confía en el cliente.</p>
+        </div>
+        <div class="card">
+          <h3>No exponer internos</h3>
+          <p>El catch-all devuelve mensajes genéricos en 500. No se exponen stack traces, nombres de clases ni paths internos.</p>
+        </div>
+        <div class="card">
+          <h3>CHECK en DB</h3>
+          <p><code>CHECK (amount_in_pesos >= 0)</code> en la tabla. Defensa en profundidad a nivel base de datos.</p>
+        </div>
+        <div class="card">
+          <h3>DDL validate</h3>
+          <p>Hibernate con <code>ddl-auto: validate</code>. Nunca modifica el schema en arranque. Flyway es el único que migra.</p>
+        </div>
+        <div class="card">
+          <h3>Max header size</h3>
+          <p>Limitado a 64KB via <code>server.max-http-request-header-size</code>.</p>
+        </div>
+        <div class="card">
+          <h3>Actuator limitado</h3>
+          <p>Solo expone <code>/actuator/health</code> y <code>/actuator/info</code>. No expone env, beans ni otras rutas sensibles.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════ 11. DATABASE ══════ -->
+    <section class="section" id="database">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(245,158,11,0.15);">🗄️</div>
+        <div>
+          <h2>Base de Datos</h2>
+          <div class="section-sub">PostgreSQL 16 + Flyway + JPA/Hibernate</div>
+        </div>
+      </div>
+
+      <div class="card-grid cols-3">
+        <div class="card">
+          <h3>Motor</h3>
+          <p>PostgreSQL 16-alpine en Docker. Volumen persistente <code>postgres_data</code>. Healthcheck con <code>pg_isready</code>.</p>
+        </div>
+        <div class="card">
+          <h3>Migraciones</h3>
+          <p>Flyway gestiona el schema. Una migración: <code>V1__create_transactions.sql</code>. Hibernate en <em>validate</em>, nunca genera DDL.</p>
+        </div>
+        <div class="card">
+          <h3>Tests</h3>
+          <p>H2 in-memory en modo PostgreSQL. Flyway también corre en tests. Mismo schema, mismo comportamiento.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Configuración JPA relevante</h3>
+        <div class="info-table">
+          <div class="info-row"><span class="info-key">open-in-view</span><span class="info-value"><code>false</code> — evita el anti-patrón que mantiene la sesión JPA abierta durante el renderizado HTTP</span></div>
+          <div class="info-row"><span class="info-key">ddl-auto</span><span class="info-value"><code>validate</code> — Hibernate valida que el schema coincida con las entidades, no lo modifica</span></div>
+          <div class="info-row"><span class="info-key">time_zone</span><span class="info-value"><code>UTC</code> — todas las fechas se almacenan y leen en UTC independiente del servidor</span></div>
+          <div class="info-row"><span class="info-key">adjust-dates-to-context-time-zone</span><span class="info-value"><code>false</code> — Jackson no convierte fechas al timezone del sistema</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Índices y por qué existen</h3>
+        <table>
+          <thead>
+            <tr><th>Índice</th><th>Columnas</th><th>Propósito</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>idx_transactions_customer_name_normalized</code></td>
+              <td><code>customer_name_normalized</code></td>
+              <td>Filtrar transacciones por cliente (GET con customerName) y contar para la cuota de 100</td>
+            </tr>
+            <tr>
+              <td><code>idx_transactions_transaction_date</code></td>
+              <td><code>transaction_date DESC, id DESC</code></td>
+              <td>Ordenamiento por fecha descendente en el listado. El id como desempate garantiza orden estable</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══════ 12. FRONTEND ══════ -->
+    <section class="section" id="frontend">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(34,197,94,0.15);">⚛️</div>
+        <div>
+          <h2>Frontend React</h2>
+          <div class="section-sub">React 19 + TypeScript + Vite + TanStack Query</div>
+        </div>
+      </div>
+
+      <div class="arch-diagram" style="margin-bottom:20px;">
+        <p style="font-size:12px; color:var(--muted); margin-bottom:20px; text-align:center; text-transform:uppercase; letter-spacing:1px;">Arquitectura del Frontend</p>
+        <div class="arch-flow">
+          <div class="arch-box">
+            <div class="arch-icon">📱</div>
+            <h4>App.tsx</h4>
+            <p>Composición principal<br>Gestión de mutations</p>
+          </div>
+          <div class="arch-arrow">↔</div>
+          <div class="arch-box" style="border-color:rgba(108,99,255,0.4);">
+            <div class="arch-icon">🔄</div>
+            <h4>React Query</h4>
+            <p>Cache del servidor<br>Invalidación automática</p>
+          </div>
+          <div class="arch-arrow">↔</div>
+          <div class="arch-box" style="border-color:rgba(0,212,170,0.4);">
+            <div class="arch-icon">🌐</div>
+            <h4>Axios (api.ts)</h4>
+            <p>HTTP Client<br>Base URL configurable</p>
+          </div>
+          <div class="arch-arrow">↔</div>
+          <div class="arch-box" style="border-color:rgba(245,158,11,0.4);">
+            <div class="arch-icon">⚙️</div>
+            <h4>Backend API</h4>
+            <p>:8080/api/transactions</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-grid cols-2">
+        <div class="card">
+          <h3>TransactionList.tsx</h3>
+          <p>Muestra la lista de transacciones. Recibe los datos via props desde App.tsx (que usa <code>useQuery</code>). Botones para editar y eliminar. Indicador de carga y estado vacío.</p>
+        </div>
+        <div class="card">
+          <h3>TransactionForm.tsx</h3>
+          <p>Formulario reutilizable para crear y editar. Usa React Hook Form + Zod resolver. Modo dual: si recibe una transacción existente es edición, si no es creación.</p>
+        </div>
+        <div class="card">
+          <h3>Modal.tsx</h3>
+          <p>Componente contenedor de modal reutilizable. Envuelve el formulario. Maneja apertura/cierre.</p>
+        </div>
+        <div class="card">
+          <h3>queries.ts</h3>
+          <p>Define <code>transactionQueryOptions</code>, y las funciones de API: <code>fetchTransactions</code>, <code>createTransaction</code>, <code>updateTransaction</code>, <code>deleteTransaction</code>.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════ 13. ESTADO FRONTEND ══════ -->
+    <section class="section" id="frontend-state">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(108,99,255,0.15);">🔄</div>
+        <div>
+          <h2>Estado &amp; Queries</h2>
+          <div class="section-sub">TanStack Query — server state management</div>
+        </div>
+      </div>
+
+<pre><code>// App.tsx — Query principal
+const { data: transactions = [], error, isFetching, isLoading } =
+  useQuery(transactionsQueryOptions)
+
+// Mutation de creación con actualización optimista del cache
+const createMutation = useMutation({
+  mutationFn: createTransaction,
+  onSuccess: (createdTransaction) => {
+    // Actualiza el cache INMEDIATAMENTE sin refetch
+    queryClient.setQueryData&lt;Transaction[]&gt;(
+      transactionKeys.all,
+      (current = []) => sortTransactions([createdTransaction, ...current])
+    )
+  },
+})
+
+// Mutation de actualización
+const updateMutation = useMutation({
+  mutationFn: ({ id, data }) => updateTransaction(id, data),
+  onSuccess: (updated) => {
+    queryClient.setQueryData&lt;Transaction[]&gt;(
+      transactionKeys.all,
+      (current = []) =>
+        sortTransactions(current.map(t => t.id === updated.id ? updated : t))
+    )
+  },
+})
+
+// Mutation de eliminación
+const deleteMutation = useMutation({
+  mutationFn: deleteTransaction,
+  onSuccess: (_, deletedId) => {
+    queryClient.setQueryData&lt;Transaction[]&gt;(
+      transactionKeys.all,
+      (current = []) => current.filter(t => t.id !== deletedId)
+    )
+  },
+})</code></pre>
+
+      <div class="callout success" style="margin-top:12px;">
+        <span class="callout-icon">⚡</span>
+        <p><strong>Cache Optimista:</strong> Las mutations actualizan el cache local de React Query directamente en <code>onSuccess</code>, sin disparar un refetch. Esto da una UX instantánea. Si hay error, el cache queda stale hasta el próximo refetch.</p>
+      </div>
+    </section>
+
+    <!-- ══════ 14. DOCKER ══════ -->
+    <section class="section" id="docker">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(0,212,170,0.15);">🐳</div>
+        <div>
+          <h2>Docker &amp; Compose</h2>
+          <div class="section-sub">Contenedorización, multi-stage builds y orquestación</div>
+        </div>
+      </div>
+
+      <div class="card-grid cols-2">
+        <div>
+          <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Backend Dockerfile (Multi-stage)</h3>
+<pre><code># Stage 1: Build con JDK 17
+FROM eclipse-temurin:17-jdk-jammy AS build
+WORKDIR /workspace
+COPY .mvn .mvn
+COPY mvnw pom.xml ./
+RUN chmod +x mvnw
+COPY src src
+# Cache de dependencias Maven via --mount
+RUN --mount=type=cache,target=/root/.m2 \
+    ./mvnw -B clean package -DskipTests
+
+# Stage 2: Runtime con solo JRE (imagen más liviana)
+FROM eclipse-temurin:17-jre-jammy
+WORKDIR /app
+COPY --from=build /workspace/target/tenpoback-0.0.1-SNAPSHOT.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]</code></pre>
+        </div>
+        <div>
+          <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Frontend Dockerfile (Multi-stage)</h3>
+<pre><code># Stage 1: Build con Node 22
+FROM node:22-alpine AS build
+ARG VITE_API_BASE_URL=
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci           # instalación limpia y reproducible
+COPY . .
+RUN npm run build    # genera /app/dist
+
+# Stage 2: Nginx sirve el estático
+FROM nginx:1.27-alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80</code></pre>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">docker-compose.yml (root — full stack)</h3>
+<pre><code>services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tenpo_challenge}
+      POSTGRES_USER: ${POSTGRES_USER:-tenpo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tenpo}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tenpo -d tenpo_challenge']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./tenpo-backend
+    environment:
+      DB_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/tenpo_challenge}
+    ports: ['${BACKEND_PORT:-8080}:8080']
+    depends_on:
+      postgres:
+        condition: service_healthy   # ← espera que Postgres esté listo
+
+  frontend:
+    build:
+      context: ./tenpo-frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    ports: ['${FRONTEND_PORT:-3000}:80']
+    depends_on: [backend]
+
+volumes:
+  postgres_data:         # ← datos persistentes entre reinicios</code></pre>
+      </div>
+
+      <div class="callout info" style="margin-top:12px;">
+        <span class="callout-icon">💡</span>
+        <p><strong><code>VITE_API_BASE_URL</code></strong> es un build argument en el Dockerfile del frontend. Las variables <code>VITE_*</code> de Vite se inyectan en el bundle en tiempo de build, no en runtime. Por eso se pasa como <code>ARG</code> al contenedor de build.</p>
+      </div>
+    </section>
+
+    <!-- ══════ 15. CONFIGURACION ══════ -->
+    <section class="section" id="config">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(255,209,102,0.15);">⚙️</div>
+        <div>
+          <h2>Configuración</h2>
+          <div class="section-sub">application.yml, variables de entorno y perfiles</div>
+        </div>
+      </div>
+
+      <div class="card-grid cols-2">
+        <div>
+          <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">application.yml</h3>
+<pre><code>server:
+  max-http-request-header-size: 64KB
+
+spring:
+  application:
+    name: tenpoback
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/tenpo_challenge}
+    username: ${DB_USERNAME:tenpo}
+    password: ${DB_PASSWORD:tenpo}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  jackson:
+    deserialization:
+      adjust-dates-to-context-time-zone: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,...}
+  rate-limit:
+    capacity: ${APP_RATE_LIMIT_CAPACITY:3}
+    duration: ${APP_RATE_LIMIT_DURATION:PT1M}</code></pre>
+        </div>
+        <div>
+          <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Variables de Entorno</h3>
+          <table>
+            <thead>
+              <tr><th>Variable</th><th>Default</th><th>Descripción</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>DB_URL</code></td><td>jdbc:postgresql://localhost:5432/tenpo_challenge</td><td>JDBC URL</td></tr>
+              <tr><td><code>DB_USERNAME</code></td><td>tenpo</td><td>Usuario DB</td></tr>
+              <tr><td><code>DB_PASSWORD</code></td><td>tenpo</td><td>Password DB</td></tr>
+              <tr><td><code>BACKEND_PORT</code></td><td>8080</td><td>Puerto del servidor</td></tr>
+              <tr><td><code>APP_CORS_ALLOWED_ORIGINS</code></td><td>localhost:3000,5173,4173</td><td>Orígenes CORS</td></tr>
+              <tr><td><code>APP_RATE_LIMIT_CAPACITY</code></td><td>3</td><td>Req por ventana</td></tr>
+              <tr><td><code>APP_RATE_LIMIT_DURATION</code></td><td>PT1M</td><td>Duración ventana (ISO-8601)</td></tr>
+              <tr><td><code>POSTGRES_PORT</code></td><td>5432</td><td>Puerto Postgres en host</td></tr>
+              <tr><td><code>FRONTEND_PORT</code></td><td>3000</td><td>Puerto frontend en host</td></tr>
+              <tr><td><code>VITE_API_BASE_URL</code></td><td>(vacío)</td><td>URL base del API para el frontend</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════ 16. TESTS ══════ -->
+    <section class="section" id="tests">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(0,212,170,0.15);">🧪</div>
+        <div>
+          <h2>Tests</h2>
+          <div class="section-sub">4 suites — unitarios, integración, repositorio y rate limiting</div>
+        </div>
+      </div>
+
+      <div class="card-grid cols-2" style="margin-bottom:20px;">
+        <div class="card">
+          <h3>TransactionServiceTest</h3>
+          <span class="badge badge-blue">Unitario + Mockito</span>
+          <div style="margin-top:10px; font-size:13px; color:var(--muted);">
+            <div style="margin:4px 0;">✓ shouldCreateTransactionWhenCustomerStillHasCapacity</div>
+            <div style="margin:4px 0;">✓ shouldRejectCreateWhenCustomerAlreadyHasOneHundredTransactions</div>
+            <div style="margin:4px 0;">✓ shouldThrowWhenTransactionDoesNotExist</div>
+            <div style="margin:4px 0;">✓ shouldFilterByCustomerName</div>
+            <div style="margin:4px 0;">✓ shouldConvertValidatedLongAmountToIntegerBeforeSaving</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>TransactionControllerTest</h3>
+          <span class="badge badge-purple">MockMvc + @WebMvcTest</span>
+          <div style="margin-top:10px; font-size:13px; color:var(--muted);">
+            <div style="margin:4px 0;">✓ shouldReturnTransactions</div>
+            <div style="margin:4px 0;">✓ shouldCreateTransactionAndReturnLocationHeader</div>
+            <div style="margin:4px 0;">✓ shouldReturnStructuredValidationErrors</div>
+            <div style="margin:4px 0;">✓ shouldReturnValidationErrorWhenAmountExceedsIntegerRange</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>TransactionRepositoryTest</h3>
+          <span class="badge badge-yellow">@DataJpaTest + H2</span>
+          <div style="margin-top:10px; font-size:13px; color:var(--muted);">
+            <div style="margin:4px 0;">✓ shouldCountTransactionsByNormalizedCustomerName</div>
+            <div style="margin:4px 0;">✓ shouldReturnTransactionsSortedByDateDescendingThenIdDescending</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>RateLimitFilterIntegrationTest</h3>
+          <span class="badge badge-red">@SpringBootTest + MockMvc</span>
+          <div style="margin-top:10px; font-size:13px; color:var(--muted);">
+            <div style="margin:4px 0;">✓ shouldBlockFourthRequestWithinTheSameMinute</div>
+            <div style="margin:4px 0; color: var(--accent2);">Rate limit en tests: 25 req/min (para no interferir)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout success">
+        <span class="callout-icon">✅</span>
+        <p><strong>Estrategia de testing:</strong> Tests unitarios con Mockito para la lógica de negocio. MockMvc para validar contratos HTTP. @DataJpaTest con H2 para repositorios. Integración completa para rate limiter. La config de test sube el límite a 25 req/min para no interferir con los tests.</p>
+      </div>
+
+      <div style="margin-top:16px;">
+        <h3 style="font-size:15px; color:#fff; margin-bottom:12px;">Correr los tests</h3>
+<pre><code># Desde tenpo-backend/
+./mvnw test
+
+# O con Maven instalado
+mvn test</code></pre>
+      </div>
+    </section>
+
+    <!-- ══════ SOLID / DRY / SEGURIDAD / RENDIMIENTO ══════ -->
+    <section class="section" id="solid">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(108,99,255,0.15);">🧱</div>
+        <div>
+          <h2>SOLID, DRY, Seguridad y Rendimiento</h2>
+          <div class="section-sub">Análisis de principios de diseño aplicados en este proyecto</div>
+        </div>
+      </div>
+
+      <h3 style="font-size:16px; color:#fff; margin-bottom:16px;">Principios SOLID — Backend</h3>
+      <div class="rule-list" style="margin-bottom:28px;">
+        <div class="rule-item"><strong>S — Single Responsibility:</strong> <code>TransactionController</code> solo maneja HTTP (routing, status codes, headers). <code>TransactionService</code> solo maneja reglas de negocio. <code>TransactionMapper</code> solo convierte entidades ↔ DTOs. <code>RateLimitFilter</code> solo aplica el límite en el pipeline. <code>ClientRateLimiter</code> solo implementa el algoritmo. Cada clase tiene exactamente una razón para cambiar.</div>
+        <div class="rule-item"><strong>O — Open/Closed:</strong> <code>GlobalExceptionHandler</code> está abierto a nuevos tipos de excepción (nuevo método <code>@ExceptionHandler</code>) sin modificar los handlers existentes. <code>BusinessRuleException</code> permite que cualquier regla de negocio lance con cualquier HTTP status sin cambiar el handler.</div>
+        <div class="rule-item"><strong>L — Liskov Substitution:</strong> <code>ResourceNotFoundException</code> y <code>BusinessRuleException</code> extienden <code>RuntimeException</code>. Son intercambiables en cualquier <code>catch (RuntimeException)</code> sin romper el comportamiento.</div>
+        <div class="rule-item"><strong>I — Interface Segregation:</strong> <code>TransactionService</code> solo usa los métodos que necesita de <code>TransactionRepository</code>: <code>save()</code>, <code>findById()</code>, <code>deleteById()</code>, <code>findAll(Sort)</code>, y las dos queries derivadas. No depende del contrato completo de <code>JpaRepository</code>.</div>
+        <div class="rule-item"><strong>D — Dependency Inversion:</strong> Todas las dependencias se inyectan por constructor (sin <code>@Autowired</code> en campos). <code>TransactionController</code> depende del bean <code>TransactionService</code>, no de la clase concreta. <code>RateLimitFilter</code> recibe <code>ClientRateLimiter</code> y <code>ClientKeyResolver</code> como beans inyectados.</div>
+      </div>
+
+      <h3 style="font-size:16px; color:#fff; margin-bottom:16px;">Principios SOLID — Frontend</h3>
+      <div class="rule-list" style="margin-bottom:28px;">
+        <div class="rule-item"><strong>S — Single Responsibility:</strong> <code>TransactionForm</code> solo gestiona estado del formulario y rendering (sin llamadas a API). <code>TransactionList</code> solo renderiza tarjetas (sin fetch, sin mutaciones). <code>formatters.ts</code> solo formatea moneda. <code>Modal.tsx</code> solo gestiona apertura/cierre accesible.</div>
+        <div class="rule-item"><strong>O — Open/Closed:</strong> Nuevos campos en el formulario se agregan extendiendo el schema Zod y añadiendo un <code>&lt;input&gt;</code> — sin cambiar la estructura del formulario. Nuevas mutaciones se agregan como hooks independientes en <code>App.tsx</code>.</div>
+        <div class="rule-item"><strong>D — Dependency Inversion:</strong> Los componentes reciben datos y callbacks como props — no llaman a APIs directamente. <code>TransactionForm</code> recibe <code>onSubmit</code>, no importa <code>createTransaction</code>.</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="font-size:16px; color:#fff; margin-bottom:16px;">Correcciones DRY aplicadas</h3>
+      <div class="card-grid cols-2" style="margin-bottom:28px;">
+        <div class="card">
+          <h3>lib/formatters.ts — Formateador CLP compartido</h3>
+          <p style="margin-bottom:10px;"><strong>Problema:</strong> <code>Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })</code> se instanciaba independientemente en <code>App.tsx</code> y <code>TransactionList.tsx</code>.</p>
+          <p><strong>Solución:</strong> Extraído a <code>src/lib/formatters.ts</code> como <code>formatCLP(amount: number): string</code>. Constante a nivel de módulo — creada una vez al importar, no en cada render.</p>
+        </div>
+        <div class="card">
+          <h3>transactionKeys factory (queries.ts)</h3>
+          <p style="margin-bottom:10px;">Todas las operaciones de cache de React Query referencian <code>transactionKeys.all</code>. Cambiar la clave del cache requiere editar una sola línea.</p>
+          <h3 style="margin-top:14px;">applyRequest() — Backend</h3>
+          <p>El método privado <code>applyRequest()</code> en <code>TransactionService</code> es compartido por <code>create()</code> y <code>update()</code>. Evita duplicar la lógica de sanitización, conversión y mapeo de campos.</p>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 style="font-size:16px; color:#fff; margin-bottom:16px;">Rendimiento — decisiones clave</h3>
+      <div class="card-grid cols-3" style="margin-bottom:28px;">
+        <div class="card">
+          <h3>@Transactional(readOnly=true)</h3>
+          <p>Aplicado en <code>findAll()</code> y <code>findById()</code>. Hibernate omite el dirty-checking. Permite routing a réplica de lectura si se configura.</p>
+        </div>
+        <div class="card">
+          <h3>Índices compuestos en DB</h3>
+          <p><code>(transaction_date DESC, id DESC)</code> cubre el ORDER BY. <code>(customer_name_normalized)</code> hace el conteo de cuota O(log n). Sin full-table scans.</p>
+        </div>
+        <div class="card">
+          <h3>customerNameNormalized pre-computado</h3>
+          <p>Calculado en escritura (<code>@PrePersist</code>). En lectura el índice se usa directamente sin llamada a <code>LOWER()</code>, que invalidaría el índice.</p>
+        </div>
+        <div class="card">
+          <h3>Caffeine in-memory</h3>
+          <p>Lecturas del rate limiter en sub-microsegundos. Sin round-trip a Redis para el scope de un challenge de un nodo.</p>
+        </div>
+        <div class="card">
+          <h3>Fetch una vez, filtrar local</h3>
+          <p>El frontend filtra por cliente localmente (zero requests). <code>useDeferredValue</code> mantiene el input responsivo mientras la lista re-renderiza.</p>
+        </div>
+        <div class="card">
+          <h3>Cache optimista post-mutación</h3>
+          <p><code>queryClient.setQueryData()</code> en lugar de <code>refetch()</code>. Feedback visual inmediato. Preserva las 3 solicitudes/min del rate limit.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ══════ CÓMO LEVANTAR ══════ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(34,197,94,0.15);">🚀</div>
+        <div>
+          <h2>Cómo levantar el proyecto</h2>
+          <div class="section-sub">3 formas: Docker Compose completo, solo backend o local</div>
+        </div>
+      </div>
+
+      <div class="card-grid cols-3">
+        <div class="card">
+          <h3>Opción 1 — Full Stack Docker</h3>
+<pre style="font-size:12px; margin-top:10px;"><code># En la raíz del proyecto
+cp .env.example .env
+docker compose up --build</code></pre>
+          <p style="margin-top:10px; font-size:13px; color:var(--muted);">Levanta Postgres + Backend + Frontend. Frontend en <code>:3000</code>, Backend en <code>:8080</code>.</p>
+        </div>
+        <div class="card">
+          <h3>Opción 2 — Solo Backend</h3>
+<pre style="font-size:12px; margin-top:10px;"><code># En tenpo-backend/
+cp .env.example .env
+docker compose up --build</code></pre>
+          <p style="margin-top:10px; font-size:13px; color:var(--muted);">Levanta Postgres + Backend. Útil para desarrollo del frontend local.</p>
+        </div>
+        <div class="card">
+          <h3>Opción 3 — Local (sin Docker)</h3>
+<pre style="font-size:12px; margin-top:10px;"><code># Requiere Postgres corriendo
+export DB_URL=jdbc:postgresql://...
+./mvnw spring-boot:run
+
+# Frontend
+npm install
+npm run dev</code></pre>
+        </div>
+      </div>
+
+      <div class="callout info" style="margin-top:16px;">
+        <span class="callout-icon">📖</span>
+        <p><strong>Swagger UI</strong> disponible en <code>http://localhost:8080/swagger-ui</code> una vez levantado el backend. Permite probar todos los endpoints directamente desde el browser.</p>
+      </div>
+    </section>
+
+    <!-- ══════ RESUMEN SENIOR ══════ -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(108,99,255,0.15);">🎓</div>
+        <div>
+          <h2>Puntos Clave para una Conversación Senior</h2>
+          <div class="section-sub">Decisiones de diseño notables y trade-offs</div>
+        </div>
+      </div>
+
+      <div class="rule-list">
+        <div class="rule-item"><strong>Doble columna para nombre de cliente:</strong> Guardar <code>customerName</code> (original) y <code>customerNameNormalized</code> (canónico) resuelve elegantemente el conteo de cuota insensible a mayúsculas/espacios, sin perder el valor original para mostrar al usuario.</div>
+        <div class="rule-item"><strong>long en DTO, int en entidad:</strong> Recibir <code>amountInPesos</code> como <code>long</code> en el record permite validar con <code>@Max(Integer.MAX_VALUE)</code> sin overflow silencioso. El service hace el cast a <code>int</code> solo tras validar. Previene una clase entera de bugs sutiles.</div>
+        <div class="rule-item"><strong>Rate limiter in-memory (Caffeine) es intencional:</strong> No es distribuido. Funciona para un solo nodo. En producción multi-instancia se necesitaría Redis. El diseño lo hace reemplazable (ClientRateLimiter + RateLimitFilter son independientes).</div>
+        <div class="rule-item"><strong>Fixed Window vs Token Bucket:</strong> Se eligió Fixed Window por simplicidad e implementación directa. Trade-off: puede permitir ráfagas al final/inicio de ventanas. Token Bucket sería más suave pero más complejo.</div>
+        <div class="rule-item"><strong>Flyway + ddl-auto: validate:</strong> Pattern recomendado para producción. Flyway es la fuente de verdad del schema. Hibernate valida pero nunca modifica. Evita sorpresas con drops/creates automáticos.</div>
+        <div class="rule-item"><strong>Cache optimista en frontend:</strong> Las mutations actualizan el cache de React Query directamente. Esto evita un round-trip al servidor tras cada operación, dando feedback visual inmediato.</div>
+        <div class="rule-item"><strong>Package by feature:</strong> Todo el dominio de transacciones en un paquete. Facilita cohesión, navegación y el eventual split en microservicio si el proyecto crece.</div>
+        <div class="rule-item"><strong>Records Java para DTOs:</strong> Inmutables por defecto, sin boilerplate (no getters/setters/equals/hashCode). Expresan claramente la intención de "data transfer only".</div>
+      </div>
+    </section>
+
+  </div><!-- /content -->
+</main>
+
+<script>
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('[id]')
+  const navLinks = document.querySelectorAll('.nav-link')
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id)
+        })
+      }
+    })
+  }, { rootMargin: '-20% 0px -70% 0px' })
+
+  sections.forEach(s => observer.observe(s))
+</script>
+</body>
+</html>

@@ -1,401 +1,588 @@
 # Tenpo FullStack Challenge
 
-This repository delivers the challenge as a production-minded Java + React application.
-- Spring Boot REST API for transaction CRUD
-- PostgreSQL persistence with Flyway migrations
-- structured global HTTP error handling
-- per-client rate limiting at 3 requests per minute
-- Swagger / OpenAPI documentation at `/swagger-ui`
-- React frontend using `axios` and `@tanstack/react-query`
-- Dockerfiles plus root-level and repo-level Docker Compose entrypoints
-- backend tests for service, repository, controller, and rate-limit integration
+A production-minded transaction management system built with **Spring Boot 3** (Java 17), **React 19** (TypeScript), **PostgreSQL 16**, and **Docker**.
 
-Complex code paths include concise comments in both English and Spanish.
+---
 
-## Objective Alignment
+## Table of Contents
 
-This solution was built to satisfy the challenge objective, not only the endpoint list.
+1. [Requirement Coverage](#1-requirement-coverage)
+2. [System Architecture](#2-system-architecture)
+3. [Backend Module Map](#3-backend-module-map)
+4. [Frontend Module Map](#4-frontend-module-map)
+5. [Request Flow Diagrams](#5-request-flow-diagrams)
+6. [Data Model](#6-data-model)
+7. [SOLID Analysis](#7-solid-analysis)
+8. [DRY Analysis](#8-dry-analysis)
+9. [Security Analysis](#9-security-analysis)
+10. [Performance Analysis](#10-performance-analysis)
+11. [API Reference](#11-api-reference)
+12. [Error Model](#12-error-model)
+13. [Rate Limiting](#13-rate-limiting)
+14. [Running the Project](#14-running-the-project)
+15. [Testing](#15-testing)
+16. [Docker Hub Publication](#16-docker-hub-publication)
 
-- scalable for the challenge scope:
-  stateless API, externalized configuration, Dockerized services, cache-aware frontend,
-  isolated rate-limit component, Flyway-managed schema
-- well documented:
-  root README, detailed backend/frontend READMEs, Swagger UI, environment examples,
-  and Docker run instructions
-- maintainable:
-  layered backend design, typed frontend modules, centralized error handling,
-  validation on both sides, and automated tests around critical behavior
+---
 
 ## 1. Requirement Coverage
 
 | Challenge requirement | Status | Implementation |
-| --- | --- | --- |
-| Create transactions | Done | `POST /api/transactions`, backend service, React form |
-| Edit transactions | Done | `PUT /api/transactions/{id}` + editor panel |
-| Delete transactions | Done | `DELETE /api/transactions/{id}` + UI delete action |
-| Required fields: id, amount, merchant, Tenpista name, date | Done | entity, DTOs, migration, UI |
-| Max 100 transactions per client | Done | `TransactionService` business rule |
-| No negative amounts | Done | backend bean validation + frontend schema |
-| No future dates | Done | backend bean validation + frontend schema |
-| Spring Boot REST API | Done | `tenpo-backend` |
-| PostgreSQL | Done | datasource config + root/repo-level compose files |
-| Rate limit 3 req/min/client | Done | `RateLimitFilter` + `ClientRateLimiter` |
-| Unit tests for services, repositories, controllers | Done | `src/test/java/...` |
-| Global HTTP error handler | Done | `GlobalExceptionHandler` |
-| Swagger/OpenAPI + `/swagger-ui` | Done | springdoc configuration |
-| React responsive frontend | Done | `tenpo-frontend` |
-| Axios fetching | Done | `src/app/api.ts` |
-| React Query / cache as plus | Done | query client + local cache updates |
-| Frontend form validation | Done | `zod` + `react-hook-form` |
-| Docker for backend, frontend, database | Done | Dockerfiles + root/repo-level Compose files |
-| README with setup and API usage | Done | this document |
+|---|---|---|
+| Create transactions | ✅ Done | `POST /api/transactions` → `TransactionController` → `TransactionService` |
+| Edit transactions | ✅ Done | `PUT /api/transactions/{id}` + side-panel editor |
+| Delete transactions | ✅ Done | `DELETE /api/transactions/{id}` + UI delete action |
+| Fields: id, amount, merchant, Tenpista name, date | ✅ Done | `Transaction` entity, DTOs, Flyway migration, React form |
+| Max 100 transactions per customer | ✅ Done | `TransactionService.create()` business rule |
+| No negative amounts | ✅ Done | `@Min(0)` (backend) + `z.number().min(0)` (frontend) |
+| No future dates | ✅ Done | `@PastOrPresent` (backend) + Zod refine (frontend) |
+| Spring Boot REST API | ✅ Done | `tenpo-backend` module |
+| PostgreSQL | ✅ Done | datasource config + Flyway migrations |
+| Rate limit 3 req/min/client | ✅ Done | `RateLimitFilter` + `ClientRateLimiter` (Caffeine) |
+| Unit tests: service, repository, controller | ✅ Done | 4 test classes in `src/test/java` |
+| Global HTTP error handler | ✅ Done | `GlobalExceptionHandler` (`@RestControllerAdvice`) |
+| Swagger / OpenAPI + `/swagger-ui` | ✅ Done | springdoc-openapi configuration |
+| React responsive frontend | ✅ Done | `tenpo-frontend` (Vite + React 19 + TypeScript) |
+| Axios HTTP | ✅ Done | shared Axios instance in `src/app/api.ts` |
+| React Query / cache (bonus) | ✅ Done | `@tanstack/react-query` v5, optimistic cache updates |
+| Frontend form validation | ✅ Done | `zod` schema + `react-hook-form` |
+| Docker (3 containers) | ✅ Done | Dockerfiles + root-level and repo-level Compose files |
+| README with setup and API usage | ✅ Done | this document |
 
-## 2. Architecture
+---
 
-### Backend
+## 2. System Architecture
 
-The backend is structured in layers:
+### Container topology
 
-- `transaction/`
-  entity, repository, DTOs, mapper, service, controller
-- `shared/api/`
-  structured error payloads
-- `shared/exception/`
-  domain exceptions and global exception handler
-- `rate/`
-  rate-limit logic and request filter
-- `config/`
-  OpenAPI and CORS configuration
-
-Important design choices:
-
-- Flyway manages the schema, so startup is deterministic.
-- Validation exists in both frontend and backend.
-- The 100-transaction cap is a service-layer business rule.
-- The UI filters locally after the initial fetch to preserve the 3 req/min limit.
-- The cache is updated after mutations instead of refetching every time.
-
-### Frontend
-
-The frontend is a Vite + React + TypeScript SPA with:
-
-- `axios` for HTTP
-- `@tanstack/react-query` for request state and cache control
-- `react-hook-form` + `zod` for validation
-- a split UI:
-  - left side: board, filter, summaries
-  - right side: create/edit form
-
-UI decisions:
-
-- warm editorial visual language instead of a generic template dashboard
-- local customer filtering to avoid wasting API quota
-- manual refresh instead of aggressive background revalidation
-- responsive layout for desktop and mobile
-
-## 3. Project Structure
-
-```text
-challenge-java/
-├── .env.example
-├── docker-compose.yml
-├── README.md
-├── tenpo-backend/
-│   ├── .env.example
-│   ├── Dockerfile
-│   ├── docker-compose.yml
-│   ├── pom.xml
-│   └── src/
-│       ├── main/
-│       └── test/
-└── tenpo-frontend/
-    ├── .env.example
-    ├── Dockerfile
-    ├── docker-compose.yml
-    ├── nginx.conf
-    ├── nginx.standalone.conf
-    ├── package.json
-    └── src/
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  docker-compose.yml  (root)                                      │
+│                                                                  │
+│  ┌─────────────────┐     ┌──────────────────┐                   │
+│  │   tenpo-frontend│     │   tenpo-backend   │                   │
+│  │   nginx + SPA   │────▶│  Spring Boot 3    │                   │
+│  │   port 3000     │     │  port 8080        │                   │
+│  └─────────────────┘     └────────┬─────────┘                   │
+│                                   │ JDBC                         │
+│                          ┌────────▼─────────┐                   │
+│                          │     postgres      │                   │
+│                          │  PostgreSQL 16    │                   │
+│                          │  port 5432        │                   │
+│                          └──────────────────┘                   │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-## 4. Backend Details
+### Request path (browser → API)
 
-### Data model
-
-The `transactions` table contains:
-
-- `id` integer primary key
-- `amount_in_pesos` integer
-- `merchant` varchar(160)
-- `customer_name` varchar(120)
-- `customer_name_normalized` varchar(120)
-- `transaction_date` timestamp
-
-The normalized name is stored so counting and filtering remain stable even when the input casing or spacing changes.
-
-### Rate limiting
-
-The challenge explicitly asks for `3 request por minuto por cliente`.
-
-This implementation uses:
-
-- client key from `X-Forwarded-For` or remote IP
-- in-memory fixed-window limiter
-- limit applied only to `/api/**`
-- response headers:
-  - `X-Rate-Limit-Limit`
-  - `X-Rate-Limit-Remaining`
-  - `Retry-After`
-
-Why this approach:
-
-- it is clean and sufficient for a single-instance challenge
-- the code is isolated and easy to replace with Redis or an API gateway later
-
-### Error model
-
-All handled errors return a structured payload:
-
-```json
-{
-  "timestamp": "2026-03-07T00:00:00Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Validation failed for the request body.",
-  "path": "/api/transactions",
-  "fieldErrors": [
-    {
-      "field": "amountInPesos",
-      "message": "Transaction amount cannot be negative."
-    }
-  ]
-}
+```
+Browser
+  │
+  │ HTTP GET/POST/PUT/DELETE /api/transactions[/{id}]
+  ▼
+Nginx (tenpo-frontend container)
+  │  /api/** → proxy_pass http://backend:8080
+  │  /*      → serve index.html (SPA routing)
+  ▼
+Spring Boot (tenpo-backend container)
+  │
+  ├─ RateLimitFilter (OncePerRequestFilter)
+  │    resolves client IP → checks Caffeine counter
+  │    if blocked: returns 429 JSON immediately
+  │
+  ├─ DispatcherServlet → TransactionController
+  │    validates path/query params
+  │
+  ├─ TransactionService
+  │    applies business rules (quota, sanitize, convert)
+  │
+  ├─ TransactionRepository (Spring Data JPA)
+  │    executes SQL queries with indexes
+  │
+  └─ PostgreSQL 16
+       transactions table with Flyway-managed schema
 ```
 
-Handled scenarios:
+### Layer separation
 
-- validation failures
-- not found
-- business rule conflicts
-- malformed JSON / invalid date formats
-- generic `500`
-
-### Swagger
-
-Swagger UI:
-
-```text
-http://localhost:8080/swagger-ui
+```
+┌─────────────────────────────────────────────────┐
+│  Presentation Layer (TransactionController)      │
+│  HTTP contract, status codes, Location header    │
+├─────────────────────────────────────────────────┤
+│  Application Layer (TransactionService)          │
+│  Business rules: quota, sanitize, validate       │
+├─────────────────────────────────────────────────┤
+│  Persistence Layer (TransactionRepository)       │
+│  Spring Data JPA derived queries + indexes       │
+├─────────────────────────────────────────────────┤
+│  Database (PostgreSQL 16 + Flyway)               │
+│  Versioned migrations, CHECK constraints         │
+└─────────────────────────────────────────────────┘
 ```
 
-OpenAPI JSON:
+---
 
-```text
-http://localhost:8080/v3/api-docs
+## 3. Backend Module Map
+
+### Package structure
+
+```
+com.tenpo.challenge
+├── TenpobackApplication.java          ← Spring Boot entry point
+│
+├── transaction/                       ← Domain aggregate
+│   ├── Transaction.java               ← JPA entity (@Entity, @PrePersist/@PreUpdate)
+│   ├── TransactionRequest.java        ← Input DTO with Bean Validation (@Valid)
+│   ├── TransactionResponse.java       ← Output DTO (excludes internal fields)
+│   ├── TransactionMapper.java         ← Entity ↔ DTO mapping (SRP)
+│   ├── TransactionRepository.java     ← Spring Data JPA (derived queries + @Query)
+│   ├── TransactionService.java        ← Business logic (quota, sanitize, convert)
+│   └── TransactionController.java     ← REST controller (5 endpoints)
+│
+├── shared/
+│   ├── api/
+│   │   ├── ApiError.java              ← Immutable error response record
+│   │   ├── ApiErrorFactory.java       ← Builds ApiError with timestamp
+│   │   └── ApiFieldError.java         ← Per-field validation error record
+│   └── exception/
+│       ├── BusinessRuleException.java ← Domain exception with HttpStatus
+│       ├── ResourceNotFoundException.java ← Always → 404
+│       └── GlobalExceptionHandler.java ← @RestControllerAdvice, 6 handlers
+│
+├── rate/
+│   ├── ClientRateLimiter.java         ← Fixed-window algorithm (Caffeine)
+│   ├── RateLimitFilter.java           ← OncePerRequestFilter (applies limit)
+│   ├── RateLimitDecision.java         ← Value record: allowed/blocked + headers
+│   ├── ClientKeyResolver.java         ← Extracts client IP (X-Forwarded-For)
+│   └── RateLimitProperties.java       ← @ConfigurationProperties (capacity, duration)
+│
+└── config/
+    ├── WebConfiguration.java          ← CORS allowlist (allowedOrigins from env)
+    ├── CorsProperties.java            ← @ConfigurationProperties for CORS origins
+    └── OpenApiConfiguration.java      ← Swagger / springdoc-openapi setup
 ```
 
-## 5. Frontend Details
+### Class relationships
 
-### Why the frontend is cache-first
+```
+TransactionController
+    │ depends on (DIP: constructor injection)
+    ▼
+TransactionService
+    │ uses
+    ├──▶ TransactionRepository  (Spring Data JPA interface)
+    │        │ backed by
+    │        └──▶ PostgreSQL (via HikariCP + Hibernate)
+    │
+    └──▶ TransactionMapper      (entity ↔ DTO)
 
-The rate limit is intentionally strict. A default SPA that refetches on focus, on reconnect, after every mutation, and while filtering would hit the limit very quickly.
+GlobalExceptionHandler
+    │ catches
+    ├──▶ ResourceNotFoundException  → 404
+    ├──▶ BusinessRuleException      → caller-specified status
+    ├──▶ MethodArgumentNotValidException → 400 with fieldErrors
+    └──▶ Exception                  → 500 (generic, no stack trace)
 
-So this UI intentionally:
-
-- fetches the list once on load
-- filters by customer locally
-- updates the React Query cache after create/update/delete
-- disables noisy automatic refetch behavior
-- exposes a manual refresh button for deliberate sync
-
-That is a better engineering tradeoff than pretending every screen should constantly refetch under a 3 req/min/client contract.
-
-### Form validation
-
-Frontend validation enforces:
-
-- non-negative amount
-- required merchant
-- required customer name
-- valid date-time
-- no future date-time
-
-The backend enforces the same rules, so the API remains safe without the UI.
-
-## 6. Local Run Without Docker
-
-### Backend
-
-Prerequisites:
-
-- Java 17+
-
-Run:
-
-```bash
-cd tenpo-backend
-./mvnw test
-./mvnw spring-boot:run
+RateLimitFilter
+    │ delegates to
+    ├──▶ ClientKeyResolver     (resolve IP)
+    └──▶ ClientRateLimiter     (check counter)
+             │ backed by
+             └──▶ Caffeine cache (in-memory, per-window-counter)
 ```
 
-Default backend URL:
+### Database migration (Flyway)
 
-```text
-http://localhost:8080
+```sql
+-- V1__create_transactions.sql
+CREATE TABLE transactions (
+    id                      SERIAL PRIMARY KEY,
+    amount_in_pesos         INTEGER NOT NULL CHECK (amount_in_pesos >= 0),
+    merchant                VARCHAR(160) NOT NULL,
+    customer_name           VARCHAR(120) NOT NULL,
+    customer_name_normalized VARCHAR(120) NOT NULL,
+    transaction_date        TIMESTAMP NOT NULL
+);
+
+-- idx_tx_date_id: primary sort path for listing (ORDER BY date DESC, id DESC)
+CREATE INDEX idx_tx_date_id ON transactions (transaction_date DESC, id DESC);
+
+-- idx_tx_customer_normalized: customer filter + per-customer quota count
+CREATE INDEX idx_tx_customer_normalized ON transactions (customer_name_normalized);
 ```
 
-The backend expects PostgreSQL by default. For a quick local environment, start the database through Docker Compose first.
+---
 
-### Frontend
+## 4. Frontend Module Map
 
-Prerequisites:
+### Directory structure
 
-- Node.js 23.x or a recent LTS release
-
-Run:
-
-```bash
-cd tenpo-frontend
-npm install
-npm run dev
+```
+src/
+├── main.tsx                           ← Entry point (QueryClient, StrictMode, mount)
+├── App.tsx                            ← Root component (all state, mutations, layout)
+├── App.css                            ← Global styles
+├── index.css                          ← CSS reset + design tokens
+│
+├── app/
+│   └── api.ts                         ← Shared Axios instance (base URL, interceptors)
+│
+├── components/
+│   └── Modal.tsx                      ← Generic accessible modal (createPortal, ARIA)
+│
+├── features/
+│   └── transactions/
+│       ├── types.ts                   ← TypeScript interfaces (Transaction, ApiError, …)
+│       ├── schema.ts                  ← Zod validation schema + form helpers
+│       ├── queries.ts                 ← React Query keys, query options, mutation fns
+│       ├── TransactionList.tsx        ← List renderer + card components
+│       └── TransactionForm.tsx        ← Controlled form (create + edit, dual mode)
+│
+└── lib/
+    └── formatters.ts                  ← Shared formatters (formatCLP — DRY fix)
 ```
 
-Default frontend URL:
+### Component tree
 
-```text
-http://localhost:5173
+```
+App
+├── [hero section]          hero actions: New transaction, Refresh
+├── [stats grid]            4 derived stat cards (count, amount, customers, latest)
+├── [workspace]
+│   ├── TransactionList     renders each Transaction as a card
+│   │   └── [card ×N]       edit button, delete button, avatar, amount, date
+│   └── aside panel
+│       ├── TransactionForm  (edit mode — activeTransaction is set)
+│       └── [empty state]   (standby — no activeTransaction)
+└── Modal
+    └── TransactionForm      (create mode — activeTransaction is null)
 ```
 
-Vite proxies `/api` to `http://localhost:8080`.
+### State flow
 
-## 7. Run With Docker Compose
+```
+App state
+├── transactions[]          ← React Query cache (fetched once, TTL 60 s)
+├── activeTransaction       ← which card is open in the side panel
+├── isCreateModalOpen       ← controls Modal visibility
+├── serverError             ← last API error from a failed mutation
+├── draftCustomerFilter     ← raw filter input (high priority)
+├── deferredCustomerFilter  ← deferred copy (low priority, used for filtering)
+└── toast                   ← ephemeral success message
 
-### Full stack from the project root
-
-This is the main challenge-aligned Docker path. It starts the frontend, backend, and PostgreSQL
-with one command.
-
-From [docker-compose.yml](docker-compose.yml):
-
-```bash
-docker compose up --build
+Derived values (no extra requests)
+├── visibleTransactions     ← filtered by deferredCustomerFilter
+├── totalAmount             ← sum of visibleTransactions
+├── uniqueCustomers         ← distinct customer count
+└── latestTransaction       ← visibleTransactions[0]
 ```
 
-Services:
+### React Query cache strategy
 
-- Frontend: `http://localhost:3000`
-- Backend API: `http://localhost:8080`
-- Swagger UI: `http://localhost:8080/swagger-ui`
-- PostgreSQL: `localhost:5432`
+```
+Initial load
+  useQuery(transactionsQueryOptions)
+    │ staleTime: 60 000 ms → no background refetch for 1 minute
+    │ gcTime: 600 000 ms   → cache survives 10 minutes of inactivity
+    │ retry: 0             → no automatic retries (preserves rate limit)
+    │ refetchOnWindowFocus: false
+    └─ refetchOnReconnect: false
 
-Optional env overrides:
+After create mutation
+  queryClient.setQueryData(transactionKeys.all, [...existing, newTx])
+  → sorted in place, no network request
 
-- defaults are documented in [.env.example](.env.example)
-- Docker Compose will read `.env` from the project root if you add one
+After update mutation
+  queryClient.setQueryData(transactionKeys.all,
+    existing.map(tx => tx.id === updatedTx.id ? updatedTx : tx))
+  → re-sorted in place, no network request
 
-Stop:
+After delete mutation
+  queryClient.setQueryData(transactionKeys.all,
+    existing.filter(tx => tx.id !== deletedId))
+  → removed in place, no network request
 
-```bash
-docker compose down
+Manual sync
+  refetch() button → forces one network request
 ```
 
-Remove volumes too:
+---
 
-```bash
-docker compose down -v
-```
-
-### Backend repo: API + database
-
-From [tenpo-backend/docker-compose.yml](tenpo-backend/docker-compose.yml):
-
-```bash
-cd tenpo-backend
-docker compose up --build
-```
-
-Services:
-
-- Backend API: `http://localhost:8080`
-- Swagger UI: `http://localhost:8080/swagger-ui`
-- PostgreSQL: `localhost:5432`
-
-Optional env overrides:
-
-- defaults are documented in [tenpo-backend/.env.example](tenpo-backend/.env.example)
-- Docker Compose will read `.env` from the backend repo if you add one
-
-Stop:
-
-```bash
-docker compose down
-```
-
-Remove volumes too:
-
-```bash
-docker compose down -v
-```
-
-### Frontend repo: UI against an already running backend
-
-The frontend repo-level compose is intentionally partial. It serves the UI on port `3000`,
-builds the app with `VITE_API_BASE_URL=http://localhost:8080/api`, and uses a standalone
-Nginx config that serves only the SPA.
-
-Before starting the frontend repo compose, make sure the backend repo stack is already running
-on `http://localhost:8080`.
-
-From [tenpo-frontend/docker-compose.yml](tenpo-frontend/docker-compose.yml):
-
-```bash
-cd tenpo-frontend
-docker compose up --build
-```
-
-Service:
-
-- Frontend: `http://localhost:3000`
-
-Optional env overrides:
-
-- defaults are documented in [tenpo-frontend/.env.example](tenpo-frontend/.env.example)
-- Docker Compose will read `.env` from the frontend repo if you add one
-
-Stop:
-
-```bash
-docker compose down
-```
-
-## 8. API Endpoints
-
-### List transactions
-
-```http
-GET /api/transactions
-```
-
-Optional filter:
-
-```http
-GET /api/transactions?customerName=Camila%20Torres
-```
-
-### Get a single transaction
-
-```http
-GET /api/transactions/{id}
-```
+## 5. Request Flow Diagrams
 
 ### Create transaction
 
-```http
-POST /api/transactions
-Content-Type: application/json
+```
+[Browser]
+  │ User fills form, clicks "Create transaction"
+  │
+  ▼
+[TransactionForm]
+  │ react-hook-form validates against transactionFormSchema (Zod)
+  │ toPayload() → normalizes whitespace, formats date as YYYY-MM-DDTHH:mm:ss
+  │
+  ▼
+[App.handleSubmit → createMutation.mutateAsync(payload)]
+  │
+  ▼ POST /api/transactions
+[Nginx proxy]
+  │
+  ▼
+[RateLimitFilter]
+  │ resolves IP → checks Caffeine counter → decrements remaining
+  │ if limit reached → 429 JSON response, flow stops here
+  │
+  ▼
+[TransactionController.create()]
+  │ @RequestBody @Valid TransactionRequest → Bean Validation
+  │ if invalid → GlobalExceptionHandler → 400 fieldErrors
+  │
+  ▼
+[TransactionService.create()]
+  │ countByCustomerNameNormalized() → checks 100-tx quota
+  │ if quota reached → BusinessRuleException → 409
+  │ sanitizeText(merchant), sanitizeText(customerName)
+  │ Math.toIntExact(amountInPesos) → overflow guard
+  │ save() → @PrePersist sets customerNameNormalized
+  │
+  ▼
+[PostgreSQL]
+  │ INSERT INTO transactions (…) RETURNING id
+  │
+  ▼ 201 Created + Location: /api/transactions/{id}
+[App.createMutation.onSuccess()]
+  │ queryClient.setQueryData() → insert + re-sort cache
+  │ setActiveTransaction(createdTx) → open side panel
+  └─ showToast("Transaction created successfully")
 ```
 
-Example body:
+### List + filter (client-side, no extra request)
+
+```
+[Browser]
+  │ User types in "Filter by Tenpista name" input
+  │
+  ▼
+[App]
+  │ setDraftCustomerFilter(value)   ← high priority, instant
+  │ deferredCustomerFilter          ← React schedules at low priority
+  │
+  ▼
+[visibleTransactions]
+  │ transactions.filter(tx =>
+  │   tx.customerName.toLowerCase().includes(deferredFilter))
+  │
+  ▼
+[TransactionList] re-renders with filtered cards
+  │
+  └─ Stats cards also recompute (totalAmount, uniqueCustomers, latestTransaction)
+     ← all derived, zero network requests
+```
+
+### Rate limit (429 flow)
+
+```
+[Browser] → 4th request within 60 s window
+  │
+  ▼
+[RateLimitFilter]
+  │ ClientKeyResolver.resolve(request) → "192.168.1.1"
+  │ ClientRateLimiter.tryConsume("192.168.1.1")
+  │   → FixedWindowCounter.count == 3  (limit reached)
+  │   → returns RateLimitDecision.blocked(retryAfterMs)
+  │
+  ▼ Short-circuit: write JSON body, set headers, return
+  │   HTTP/1.1 429 Too Many Requests
+  │   X-Rate-Limit-Limit: 3
+  │   X-Rate-Limit-Remaining: 0
+  │   Retry-After: <seconds until window resets>
+  │
+  ▼
+[App.createMutation.onError()]
+  │ extractApiError() → ApiError{status:429, message:"Rate limit exceeded"}
+  └─ setServerError() → shown in TransactionForm as server-error banner
+```
+
+---
+
+## 6. Data Model
+
+### Entity: `Transaction`
+
+| Column | SQL Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | `SERIAL` | `PRIMARY KEY` | Auto-incremented by PostgreSQL |
+| `amount_in_pesos` | `INTEGER` | `NOT NULL, CHECK >= 0` | Backend: `@Min(0) @Max(2147483647)` |
+| `merchant` | `VARCHAR(160)` | `NOT NULL` | Backend sanitizes whitespace |
+| `customer_name` | `VARCHAR(120)` | `NOT NULL` | Original casing preserved |
+| `customer_name_normalized` | `VARCHAR(120)` | `NOT NULL` | Lowercase, collapsed spaces (for indexed filter + count) |
+| `transaction_date` | `TIMESTAMP` | `NOT NULL` | `@PastOrPresent` — no future dates |
+
+### Indexes
+
+| Name | Columns | Purpose |
+|---|---|---|
+| `idx_tx_date_id` | `(transaction_date DESC, id DESC)` | Covers the default ORDER BY in listing queries |
+| `idx_tx_customer_normalized` | `(customer_name_normalized)` | Per-customer quota count + `customerName` filter |
+
+### DTO shapes
+
+```
+TransactionRequest (input)              TransactionResponse (output)
+─────────────────────────────────       ─────────────────────────────────
+long   amountInPesos  @Min(0)          Integer id
+String merchant       @NotBlank        Integer amountInPesos
+String customerName   @NotBlank        String  merchant
+String transactionDate @PastOrPresent  String  customerName
+                                       String  transactionDate
+                       (customerNameNormalized intentionally excluded)
+```
+
+---
+
+## 7. SOLID Analysis
+
+### Single Responsibility Principle (SRP)
+
+| Class | Responsibility | What it does NOT do |
+|---|---|---|
+| `TransactionController` | HTTP contract (routing, status codes, headers) | No business logic, no DTO mapping |
+| `TransactionService` | Business rules (quota, sanitize, convert) | No HTTP concerns, no entity-to-DTO mapping |
+| `TransactionRepository` | Database queries | No business rules |
+| `TransactionMapper` | Entity ↔ DTO conversion | No persistence, no validation |
+| `GlobalExceptionHandler` | Error response shaping | No domain logic |
+| `RateLimitFilter` | Rate-limit enforcement (HTTP pipeline) | No rate-limit algorithm |
+| `ClientRateLimiter` | Fixed-window counter algorithm | No HTTP concerns |
+| `ClientKeyResolver` | Client IP extraction | No decision making |
+| `TransactionForm` (React) | Form state + rendering | No API calls, no cache management |
+| `TransactionList` (React) | Card rendering | No data fetching, no mutation |
+| `formatters.ts` | Currency formatting | No rendering, no state |
+
+### Open/Closed Principle (OCP)
+
+- **`GlobalExceptionHandler`**: new exception types can be handled by adding a new `@ExceptionHandler` method without touching existing handlers.
+- **`BusinessRuleException`**: new business rules can throw this with any `HttpStatus` — the handler needs no change.
+- **`TransactionForm`**: new form fields are added by extending the Zod schema and adding a JSX input — no structural change to the form logic.
+
+### Liskov Substitution Principle (LSP)
+
+- `ResourceNotFoundException` and `BusinessRuleException` both extend `RuntimeException`. They can be caught by `catch(RuntimeException)` in any context without breaking behavior.
+
+### Interface Segregation Principle (ISP)
+
+- `TransactionRepository` extends `JpaRepository<Transaction, Integer>`. The service only uses `save()`, `findById()`, `deleteById()`, `findAll()`, and the two derived methods — it does not depend on the full JPA contract directly.
+
+### Dependency Inversion Principle (DIP)
+
+- All Spring beans are injected via constructor injection (no `@Autowired` on fields).
+- `TransactionController` depends on the `TransactionService` abstraction (bean interface), not on a concrete class.
+- `RateLimitFilter` depends on `ClientRateLimiter` and `ClientKeyResolver` abstractions.
+- React components receive data and callbacks as props — they do not call APIs directly.
+
+---
+
+## 8. DRY Analysis
+
+### Shared currency formatter (`lib/formatters.ts`)
+
+Before this fix, `Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })` was instantiated independently in both `App.tsx` and `TransactionList.tsx`. A change to the locale or options would have required editing two files and risked divergence.
+
+**Fix**: extracted into `src/lib/formatters.ts` as `formatCLP(amount: number): string`. Both `App.tsx` and `TransactionList.tsx` now import this function. The `Intl.NumberFormat` object is a module-level constant — created once on import, not on every render.
+
+### Backend `applyRequest()` helper
+
+`TransactionService.applyRequest()` is a private method shared by both `create()` and `update()`. It holds the field-mapping logic (sanitizeText, Math.toIntExact, date parsing) in a single place. Without it, those four lines would be duplicated in both methods.
+
+### `transactionKeys` cache key factory (`queries.ts`)
+
+All React Query cache operations reference `transactionKeys.all`. Changing the key string requires editing one line.
+
+### `ApiErrorFactory`
+
+Builds `ApiError` records with a consistent timestamp and reason phrase. Every exception handler calls the same factory instead of constructing the record inline.
+
+### `toPayload()` and `getInitialFormValues()` (`schema.ts`)
+
+Form-to-payload conversion and initial-value computation are defined once in `schema.ts` and called from both `TransactionForm` (for initial state) and `App.tsx` (the submit callback). The whitespace normalization (`.trim().replace(/\s+/g, ' ')`) mirrors the backend's `sanitizeText()` in a single place.
+
+---
+
+## 9. Security Analysis
+
+### CORS
+
+`WebConfiguration` builds the CORS allowlist from `app.cors.allowed-origins` (env var). If the list is empty, no origins are mapped — the behavior is **fail-closed** (all cross-origin requests blocked). In Docker Compose the default allows `localhost:3000` and `localhost:5173` only.
+
+### Input validation (defense in depth)
+
+| Layer | Mechanism |
+|---|---|
+| Frontend | Zod schema with `refine()` for date rules; `react-hook-form` prevents submission until valid |
+| HTTP | Bean Validation (`@Valid` on `@RequestBody`); `GlobalExceptionHandler` returns 400 with field errors |
+| Service | `Math.toIntExact()` guards against integer overflow; `sanitizeText()` collapses whitespace |
+| Database | `CHECK (amount_in_pesos >= 0)` constraint as a last line of defense |
+
+### Error information exposure
+
+`GlobalExceptionHandler` catches bare `Exception` and returns a **generic message** (`"An unexpected error occurred."`) with no stack trace, class names, or internal paths. The real exception is logged server-side only.
+
+### Rate limiting
+
+- Applies to `/api/**` only (not to Swagger UI or Actuator paths).
+- Returns structured JSON (not an HTML error page) for programmatic consumption.
+- Sets `Retry-After` header so well-behaved clients can back off.
+
+### Known limitation: X-Forwarded-For spoofing
+
+`ClientKeyResolver` trusts the first value of the `X-Forwarded-For` header. A malicious client can spoof this header to bypass per-IP rate limiting. This is an **accepted trade-off** for a single-node challenge — in a production setup behind a trusted proxy (e.g. AWS ALB), you would configure the proxy to overwrite (not append) the header, or use a dedicated API gateway for rate limiting.
+
+---
+
+## 10. Performance Analysis
+
+### Backend
+
+| Technique | Where | Effect |
+|---|---|---|
+| `@Transactional(readOnly = true)` | `findAll()`, `findById()` | Hibernate skips dirty-checking; DB can use read replica if configured |
+| Compound index `(transaction_date DESC, id DESC)` | `V1__create_transactions.sql` | Covers the ORDER BY clause; avoids a full-table sort |
+| Single-column index `(customer_name_normalized)` | `V1__create_transactions.sql` | Makes per-customer quota count O(log n) instead of O(n) |
+| `customerNameNormalized` column | `Transaction.java` | Pre-computed at write time; avoids `LOWER()` in queries, keeping the index usable |
+| Caffeine cache for rate-limit counters | `ClientRateLimiter.java` | In-memory, sub-microsecond reads; no Redis round-trip for the challenge scope |
+| HikariCP connection pool | Spring Boot default | Reuses DB connections across requests |
+
+### Frontend
+
+| Technique | Where | Effect |
+|---|---|---|
+| Fetch once, filter locally | `App.tsx` | Zero extra requests for customer filter — respects 3 req/min limit |
+| `staleTime: 60 000 ms` | `main.tsx` QueryClient | Data younger than 1 minute is never re-fetched in background |
+| `refetchOnWindowFocus: false` | `main.tsx` QueryClient | No request fired when user alt-tabs back |
+| `refetchOnReconnect: false` | `main.tsx` QueryClient | No request on network reconnect |
+| `retry: 0` | `main.tsx` QueryClient | No automatic retries (each retry costs 1 of 3 req/min) |
+| Optimistic cache updates | `App.tsx` mutations | `setQueryData()` instead of `refetch()` after create/update/delete |
+| Module-level `Intl.NumberFormat` | `lib/formatters.ts` | Created once at import time, not on every render |
+| `useDeferredValue` on filter | `App.tsx` | Filter input stays responsive while list re-renders at lower priority |
+| `useTransition` for panel state | `App.tsx` | Panel open/close does not block urgent renders |
+| CSS animation stagger via `--stagger` | `TransactionList.tsx` | Stagger computed in CSS from a custom property — no JS animation loop |
+
+---
+
+## 11. API Reference
+
+### Endpoints
+
+| Method | Path | Status | Description |
+|---|---|---|---|
+| `GET` | `/api/transactions` | 200 | List all transactions (newest first) |
+| `GET` | `/api/transactions?customerName=X` | 200 | Filter by customer name (case-insensitive) |
+| `GET` | `/api/transactions/{id}` | 200 / 404 | Get a single transaction |
+| `POST` | `/api/transactions` | 201 / 400 / 409 / 429 | Create a transaction |
+| `PUT` | `/api/transactions/{id}` | 200 / 400 / 404 / 429 | Update a transaction |
+| `DELETE` | `/api/transactions/{id}` | 204 / 404 / 429 | Delete a transaction |
+
+### Request body (`POST` / `PUT`)
 
 ```json
 {
@@ -406,114 +593,209 @@ Example body:
 }
 ```
 
-### Update transaction
+### Successful response (single transaction)
 
-```http
-PUT /api/transactions/{id}
-Content-Type: application/json
+```json
+{
+  "id": 42,
+  "amountInPesos": 15000,
+  "merchant": "Supermercado Lider",
+  "customerName": "Camila Torres",
+  "transactionDate": "2026-03-06T11:30:00"
+}
 ```
 
-### Delete transaction
-
-```http
-DELETE /api/transactions/{id}
-```
-
-## 9. Useful cURL Examples
-
-Create:
+### cURL examples
 
 ```bash
+# Create
 curl -X POST http://localhost:8080/api/transactions \
   -H 'Content-Type: application/json' \
-  -d '{
-    "amountInPesos": 21000,
-    "merchant": "Restaurante",
-    "customerName": "Camila Torres",
-    "transactionDate": "2026-03-06T19:45:00"
-  }'
-```
+  -d '{"amountInPesos":21000,"merchant":"Restaurante","customerName":"Camila Torres","transactionDate":"2026-03-06T19:45:00"}'
 
-List:
-
-```bash
+# List
 curl http://localhost:8080/api/transactions
-```
 
-Filter by customer:
-
-```bash
+# Filter by customer
 curl 'http://localhost:8080/api/transactions?customerName=Camila%20Torres'
-```
 
-Update:
-
-```bash
+# Update
 curl -X PUT http://localhost:8080/api/transactions/1 \
   -H 'Content-Type: application/json' \
-  -d '{
-    "amountInPesos": 24000,
-    "merchant": "Restaurante actualizado",
-    "customerName": "Camila Torres",
-    "transactionDate": "2026-03-06T20:15:00"
-  }'
-```
+  -d '{"amountInPesos":24000,"merchant":"Restaurante actualizado","customerName":"Camila Torres","transactionDate":"2026-03-06T20:15:00"}'
 
-Delete:
-
-```bash
+# Delete
 curl -X DELETE http://localhost:8080/api/transactions/1
 ```
 
-## 10. Testing
+### Swagger UI
 
-Backend tests cover:
+```
+http://localhost:8080/swagger-ui
+```
 
-- `TransactionServiceTest`
-- `TransactionRepositoryTest`
-- `TransactionControllerTest`
-- `RateLimitFilterIntegrationTest`
+OpenAPI JSON:
 
-Run:
+```
+http://localhost:8080/v3/api-docs
+```
+
+---
+
+## 12. Error Model
+
+All handled errors return a structured JSON payload:
+
+```json
+{
+  "timestamp": "2026-03-06T19:45:00Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Validation failed for the request body.",
+  "path": "/api/transactions",
+  "fieldErrors": [
+    { "field": "amountInPesos", "message": "Transaction amount cannot be negative." },
+    { "field": "transactionDate", "message": "Transaction date cannot be in the future." }
+  ]
+}
+```
+
+| Scenario | Status | `fieldErrors`? |
+|---|---|---|
+| Bean validation failure | 400 | Yes — one entry per failing field |
+| Malformed JSON / unparseable date | 400 | No |
+| Transaction not found | 404 | No |
+| Business rule violation (e.g. quota) | 409 | No |
+| Rate limit exceeded | 429 | No |
+| Unexpected server error | 500 | No (generic message, no stack trace) |
+
+The frontend `normalizeApiError()` function tolerantly coerces any API error shape into a typed `ApiError` so the UI can always display a meaningful message.
+
+---
+
+## 13. Rate Limiting
+
+### Algorithm
+
+Fixed-window counter per client IP. Each `FixedWindowCounter` stores:
+
+- `count` — requests made in the current window
+- `windowStart` — the Instant when the window opened
+
+When a request arrives:
+
+1. If `now - windowStart >= window duration`, reset counter to 0 and set `windowStart = now`.
+2. If `count < capacity`, increment and allow.
+3. Else block and return `Retry-After = ceil((windowStart + duration - now) / 1 000)` seconds.
+
+### Configuration
+
+| Property | Default | Env override |
+|---|---|---|
+| `app.rate-limit.capacity` | `3` | `APP_RATE_LIMIT_CAPACITY` |
+| `app.rate-limit.duration` | `PT1M` (1 minute) | `APP_RATE_LIMIT_DURATION` |
+
+### Response headers
+
+| Header | Meaning |
+|---|---|
+| `X-Rate-Limit-Limit` | Maximum requests allowed per window |
+| `X-Rate-Limit-Remaining` | Requests remaining in the current window |
+| `Retry-After` | Seconds until the window resets (only on 429) |
+
+---
+
+## 14. Running the Project
+
+### Option A — Full stack from the project root (recommended)
+
+```bash
+docker compose up --build
+```
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger-ui |
+| PostgreSQL | localhost:5432 |
+
+Stop:
+
+```bash
+docker compose down
+# or with volumes:
+docker compose down -v
+```
+
+### Option B — Backend + database only
+
+```bash
+cd tenpo-backend
+docker compose up --build
+```
+
+### Option C — Frontend against a running backend
+
+```bash
+cd tenpo-frontend
+docker compose up --build
+```
+
+Requires the backend to already be running on `http://localhost:8080`.
+
+### Option D — Local dev (no Docker)
+
+```bash
+# Backend (Java 17+ required)
+cd tenpo-backend
+./mvnw spring-boot:run
+
+# Frontend (Node 20+ required)
+cd tenpo-frontend
+npm install
+npm run dev   # → http://localhost:5173 (Vite proxies /api to :8080)
+```
+
+Environment variables are documented in `.env.example` files in each directory.
+
+---
+
+## 15. Testing
+
+### Backend (Maven)
 
 ```bash
 cd tenpo-backend
 ./mvnw test
 ```
 
-Frontend verification:
+| Test class | What it covers |
+|---|---|
+| `TransactionServiceTest` | Create/update/delete business rules, quota boundary (99 vs 100), name canonicalization, integer overflow guard |
+| `TransactionRepositoryTest` | Derived query methods, `@PrePersist` hook, index-backed filter |
+| `TransactionControllerTest` | HTTP contract (status codes, Location header, 400 field errors, @Max boundary) |
+| `RateLimitFilterIntegrationTest` | 3-allowed + 4th-blocked cycle, Retry-After header, 429 JSON body |
+
+H2 in-memory database is used for tests (PostgreSQL compatibility mode). No Docker required.
+
+### Frontend (TypeScript + Vite)
 
 ```bash
 cd tenpo-frontend
-npm run lint
-npm run build
+npm run lint    # ESLint
+npm run build   # tsc -b + vite build (type-check + bundle)
 ```
 
-## 11. Deliverable Note
+---
 
-The challenge asks for Docker Hub publication or a `docker-compose` based way to run the project. This repository satisfies that deliverable through:
+## 16. Docker Hub Publication
 
-- [docker-compose.yml](docker-compose.yml) for the one-command full stack
-- [tenpo-backend/docker-compose.yml](tenpo-backend/docker-compose.yml) for API + database
-- [tenpo-frontend/docker-compose.yml](tenpo-frontend/docker-compose.yml) for the frontend entrypoint
+The backend image is tagged through Compose and is ready to publish:
 
-The root compose is the recommended reviewer path. The repo-level compose files remain available
-for separate local startup when needed.
-
-## 12. Docker Hub Publication
-
-The backend image is now tagged through Compose, so it is ready to publish without changing the
-Docker setup.
-
-Default local tag:
-
-- `tenpo-backend:latest`
-
-To publish it to Docker Hub:
-
-1. Copy [tenpo-backend/.env.example](tenpo-backend/.env.example) to `tenpo-backend/.env`
+1. Copy `tenpo-backend/.env.example` to `tenpo-backend/.env`
 2. Set `BACKEND_IMAGE_NAME=<your-dockerhub-user>/tenpo-backend`
-3. Run `cd tenpo-backend && docker compose build backend`
-4. Run `docker push <your-dockerhub-user>/tenpo-backend:latest`
+3. Build: `cd tenpo-backend && docker compose build backend`
+4. Push: `docker push <your-dockerhub-user>/tenpo-backend:latest`
 
-If image publication is needed later, the project is already containerized and can be pushed to Docker Hub or another public registry with standard `docker build`, `docker tag`, and `docker push` commands.
+The project is fully containerized and can be pushed to any public registry with standard `docker build`, `docker tag`, and `docker push` commands.
