@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -88,6 +89,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
      */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
+        if (CorsUtils.isPreFlightRequest(request)) {
+            return true;
+        }
         // EN: Only apply rate limiting to paths that start with /api/.
         //     This excludes /swagger-ui, /v3/api-docs, /actuator/health, etc.
         // ES: Solo aplicamos la limitación de tasa a rutas que comienzan con /api/.

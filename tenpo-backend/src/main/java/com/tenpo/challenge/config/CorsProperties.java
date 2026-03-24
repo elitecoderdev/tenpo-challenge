@@ -1,6 +1,7 @@
 package com.tenpo.challenge.config;
 
 import java.util.List;
+import java.util.Objects;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -33,4 +34,29 @@ public record CorsProperties(
         //     de origen cruzado a la API. Cada entrada debe ser el protocolo + host + puerto exacto.
         List<String> allowedOrigins
 ) {
+
+    public CorsProperties {
+        allowedOrigins = allowedOrigins == null
+                ? List.of()
+                : allowedOrigins.stream()
+                        .filter(Objects::nonNull)
+                        .map(String::trim)
+                        // EN: Browser Origin headers never include a trailing slash. Normalizing here
+                        //     makes env values such as "https://app.vercel.app/ " still match.
+                        // ES: Los headers Origin del navegador nunca incluyen barra final. Normalizar
+                        //     aquí permite que valores de entorno como "https://app.vercel.app/ "
+                        //     sigan coincidiendo.
+                        .map(CorsProperties::stripTrailingSlash)
+                        .filter(origin -> !origin.isBlank())
+                        .distinct()
+                        .toList();
+    }
+
+    private static String stripTrailingSlash(String origin) {
+        String normalizedOrigin = origin;
+        while (normalizedOrigin.endsWith("/")) {
+            normalizedOrigin = normalizedOrigin.substring(0, normalizedOrigin.length() - 1);
+        }
+        return normalizedOrigin;
+    }
 }

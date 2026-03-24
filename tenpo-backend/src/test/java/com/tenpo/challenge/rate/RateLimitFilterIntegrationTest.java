@@ -1,6 +1,7 @@
 package com.tenpo.challenge.rate;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -45,7 +46,8 @@ import org.springframework.test.web.servlet.MockMvc;
         "app.rate-limit.duration=PT1M",
         // EN: Pin the API key so requests can pass the authentication filter during this test.
         // ES: Fijamos la API key para que las solicitudes puedan pasar el filtro de autenticación durante esta prueba.
-        "app.security.api-key=test-rate-limit-key"
+        "app.security.api-key=test-rate-limit-key",
+        "app.cors.allowed-origins=https://tenpo-challenge.vercel.app/"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -99,5 +101,26 @@ class RateLimitFilterIntegrationTest {
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().string("Retry-After", "60"))
                 .andExpect(jsonPath("$.status").value(429));
+    }
+
+    @Test
+    void shouldNotCountCorsPreflightRequestsAgainstRateLimit() throws Exception {
+        for (int requestNumber = 0; requestNumber < 3; requestNumber++) {
+            mockMvc.perform(options("/api/transactions")
+                            .header("X-Forwarded-For", "10.0.0.2")
+                            .header("Origin", "https://tenpo-challenge.vercel.app")
+                            .header("Access-Control-Request-Method", "GET")
+                            .header("Access-Control-Request-Headers", "X-API-Key,Content-Type"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Access-Control-Allow-Origin", "https://tenpo-challenge.vercel.app"));
+        }
+
+        for (int requestNumber = 0; requestNumber < 3; requestNumber++) {
+            mockMvc.perform(get("/api/transactions")
+                            .header("X-Forwarded-For", "10.0.0.2")
+                            .header("X-API-Key", TEST_API_KEY))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("X-Rate-Limit-Limit", "3"));
+        }
     }
 }

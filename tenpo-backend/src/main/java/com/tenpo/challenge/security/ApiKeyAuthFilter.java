@@ -15,6 +15,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -115,6 +116,9 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String uri = request.getRequestURI();
+        if (CorsUtils.isPreFlightRequest(request)) {
+            return true;
+        }
         // EN: Bypass auth for Swagger UI, OpenAPI JSON, and Actuator health/info.
         // ES: Saltamos autenticación para Swagger UI, JSON OpenAPI y Actuator health/info.
         return uri.startsWith("/swagger-ui")

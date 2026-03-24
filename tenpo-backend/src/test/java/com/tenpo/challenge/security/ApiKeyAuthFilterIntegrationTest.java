@@ -1,6 +1,7 @@
 package com.tenpo.challenge.security;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -47,7 +48,10 @@ import org.springframework.test.web.servlet.MockMvc;
         "app.security.api-key=test-secret-key",
         // EN: Raise the rate-limit cap so authentication tests are not affected by quota.
         // ES: Elevamos el límite de tasa para que las pruebas de autenticación no sean afectadas por la cuota.
-        "app.rate-limit.capacity=100"
+        "app.rate-limit.capacity=100",
+        // EN: Intentionally include a trailing slash to verify origin normalization.
+        // ES: Incluimos intencionalmente una barra final para verificar la normalización del origen.
+        "app.cors.allowed-origins=https://tenpo-challenge.vercel.app/"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -109,6 +113,23 @@ class ApiKeyAuthFilterIntegrationTest {
         mockMvc.perform(get("/api/transactions")
                         .header(ApiKeyAuthFilter.API_KEY_HEADER, VALID_API_KEY))
                 .andExpect(status().isOk());
+    }
+
+    /**
+     * EN: Verifies that a browser CORS preflight request is not challenged for an API key
+     *     and that the configured origin matches even when the property included a trailing slash.
+     *
+     * ES: Verifica que una solicitud preflight CORS del navegador no reciba un desafío de API key
+     *     y que el origen configurado coincida incluso cuando la propiedad incluía una barra final.
+     */
+    @Test
+    void shouldAllowCorsPreflightWithoutApiKey() throws Exception {
+        mockMvc.perform(options("/api/transactions")
+                        .header("Origin", "https://tenpo-challenge.vercel.app")
+                        .header("Access-Control-Request-Method", "GET")
+                        .header("Access-Control-Request-Headers", "X-API-Key,Content-Type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "https://tenpo-challenge.vercel.app"));
     }
 
     // ── Security Headers Tests ────────────────────────────────────────────────────────────
