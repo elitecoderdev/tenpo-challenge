@@ -1,10 +1,17 @@
 package com.tenpo.challenge.transaction;
 
+import com.tenpo.challenge.shared.api.ApiError;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -74,6 +81,24 @@ public class TransactionController {
      */
     @GetMapping
     @Operation(summary = "List transactions", description = "Returns all transactions or filters them by Tenpista name.")
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Transaction list returned successfully.",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                array = @ArraySchema(schema = @Schema(implementation = TransactionResponse.class))
+            )
+        ),
+        @ApiResponse(
+            responseCode = "429",
+            description = "Rate limit exceeded (3 requests / minute / client).",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ApiError.class)
+            )
+        )
+    })
     public List<TransactionResponse> listTransactions(
             @RequestParam(required = false) String customerName
     ) {
@@ -94,6 +119,32 @@ public class TransactionController {
      */
     @GetMapping("/{transactionId}")
     @Operation(summary = "Get a transaction", description = "Returns one transaction by identifier.")
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Transaction found.",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = TransactionResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Transaction not found.",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ApiError.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "429",
+            description = "Rate limit exceeded (3 requests / minute / client).",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ApiError.class)
+            )
+        )
+    })
     public TransactionResponse getTransaction(@PathVariable Integer transactionId) {
         return transactionService.getTransaction(transactionId);
     }
@@ -116,6 +167,32 @@ public class TransactionController {
      */
     @PostMapping
     @Operation(summary = "Create a transaction", description = "Creates a new Tenpista transaction.")
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "201",
+            description = "Transaction created. The Location header points to the new resource.",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = TransactionResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Validation failed. The fieldErrors array contains per-field messages.",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ApiError.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "429",
+            description = "Rate limit exceeded (3 requests / minute / client).",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ApiError.class)
+            )
+        )
+    })
     public ResponseEntity<TransactionResponse> createTransaction(@Valid @RequestBody TransactionRequest request) {
         TransactionResponse createdTransaction = transactionService.createTransaction(request);
 
@@ -145,6 +222,40 @@ public class TransactionController {
      */
     @PutMapping("/{transactionId}")
     @Operation(summary = "Update a transaction", description = "Updates an existing transaction.")
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Transaction updated successfully.",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = TransactionResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Validation failed. The fieldErrors array contains per-field messages.",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ApiError.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Transaction not found.",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ApiError.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "429",
+            description = "Rate limit exceeded (3 requests / minute / client).",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ApiError.class)
+            )
+        )
+    })
     public TransactionResponse updateTransaction(
             @PathVariable Integer transactionId,
             @Valid @RequestBody TransactionRequest request
@@ -168,6 +279,29 @@ public class TransactionController {
      */
     @DeleteMapping("/{transactionId}")
     @Operation(summary = "Delete a transaction", description = "Deletes an existing transaction.")
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "204",
+            description = "Transaction deleted. No body is returned.",
+            content = @Content
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Transaction not found.",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ApiError.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "429",
+            description = "Rate limit exceeded (3 requests / minute / client).",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = ApiError.class)
+            )
+        )
+    })
     public ResponseEntity<Void> deleteTransaction(@PathVariable Integer transactionId) {
         transactionService.deleteTransaction(transactionId);
         return ResponseEntity.noContent().build();

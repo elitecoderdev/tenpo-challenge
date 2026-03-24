@@ -1,0 +1,289 @@
+{
+  "info": {
+    "name": "Tenpo Transactions API",
+    "description": "Complete CRUD collection for the Tenpo Transactions REST API.\n\nBase URL is controlled by the `baseUrl` collection variable (default: http://localhost:8080).\nChange it once in the collection Variables tab and all requests update automatically.\n\nRate limit: 3 requests / minute / client (HTTP 429 when exceeded).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string",
+      "description": "Backend base URL. Override for Docker full-stack (http://localhost:8080) or any other environment."
+    },
+    {
+      "key": "transactionId",
+      "value": "1",
+      "type": "string",
+      "description": "ID of the transaction used in single-resource requests. Update after running 'Create transaction'."
+    }
+  ],
+  "item": [
+    {
+      "name": "Transactions",
+      "description": "CRUD operations for Tenpista transactions.",
+      "item": [
+        {
+          "name": "List all transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"]
+            },
+            "description": "Returns all transactions ordered by date descending, then by id descending.\nHTTP 200 — array of TransactionResponse objects.\nHTTP 429 — rate limit exceeded."
+          },
+          "response": [
+            {
+              "name": "200 OK — list returned",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": 3,\n    \"amountInPesos\": 25000,\n    \"merchant\": \"Supermercado Lider\",\n    \"customerName\": \"Camila Torres\",\n    \"transactionDate\": \"2026-03-07T11:30:00\"\n  },\n  {\n    \"id\": 1,\n    \"amountInPesos\": 15000,\n    \"merchant\": \"Farmacia Cruz Verde\",\n    \"customerName\": \"Javier Muñoz\",\n    \"transactionDate\": \"2026-03-06T09:00:00\"\n  }\n]",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/transactions" }
+              }
+            },
+            {
+              "name": "429 Too Many Requests",
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-03-07T11:30:00Z\",\n  \"status\": 429,\n  \"error\": \"Too Many Requests\",\n  \"message\": \"Rate limit exceeded. Try again in a moment.\",\n  \"path\": \"/api/transactions\",\n  \"fieldErrors\": []\n}",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/transactions" }
+              }
+            }
+          ]
+        },
+        {
+          "name": "List transactions — filter by customer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?customerName=Camila Torres",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"],
+              "query": [
+                {
+                  "key": "customerName",
+                  "value": "Camila Torres",
+                  "description": "Case-insensitive, whitespace-normalized Tenpista name filter."
+                }
+              ]
+            },
+            "description": "Filters the transaction list by Tenpista name (case-insensitive, whitespace-normalized).\nHTTP 200 — filtered array.\nHTTP 429 — rate limit exceeded."
+          },
+          "response": []
+        },
+        {
+          "name": "Get transaction by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/{{transactionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions", "{{transactionId}}"]
+            },
+            "description": "Returns a single transaction by its primary key.\nHTTP 200 — TransactionResponse.\nHTTP 404 — transaction not found.\nHTTP 429 — rate limit exceeded."
+          },
+          "response": [
+            {
+              "name": "200 OK — found",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"amountInPesos\": 15000,\n  \"merchant\": \"Farmacia Cruz Verde\",\n  \"customerName\": \"Javier Muñoz\",\n  \"transactionDate\": \"2026-03-06T09:00:00\"\n}",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/transactions/{{transactionId}}" }
+              }
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-03-07T11:30:00Z\",\n  \"status\": 404,\n  \"error\": \"Not Found\",\n  \"message\": \"Transaction not found.\",\n  \"path\": \"/api/transactions/999\",\n  \"fieldErrors\": []\n}",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/transactions/999" }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create transaction",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Automatically saves the new transaction ID into the collection variable.",
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('transactionId', body.id);",
+                  "    console.log('transactionId set to', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountInPesos\": 15000,\n  \"merchant\": \"Farmacia Cruz Verde\",\n  \"customerName\": \"Javier Muñoz\",\n  \"transactionDate\": \"2026-03-06T09:00:00\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"]
+            },
+            "description": "Creates a new Tenpista transaction.\nReturns HTTP 201 Created with a Location header pointing to the new resource.\nThe test script automatically saves the returned `id` into the `transactionId` collection variable.\n\nHTTP 201 — created.\nHTTP 400 — validation failed (fieldErrors populated).\nHTTP 429 — rate limit exceeded."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                { "key": "Content-Type", "value": "application/json" },
+                { "key": "Location", "value": "/api/transactions/3" }
+              ],
+              "body": "{\n  \"id\": 3,\n  \"amountInPesos\": 15000,\n  \"merchant\": \"Farmacia Cruz Verde\",\n  \"customerName\": \"Javier Muñoz\",\n  \"transactionDate\": \"2026-03-06T09:00:00\"\n}",
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/transactions" }
+              }
+            },
+            {
+              "name": "400 Bad Request — validation failed",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-03-07T11:30:00Z\",\n  \"status\": 400,\n  \"error\": \"Bad Request\",\n  \"message\": \"Validation failed for the request body.\",\n  \"path\": \"/api/transactions\",\n  \"fieldErrors\": [\n    { \"field\": \"amountInPesos\", \"message\": \"Transaction amount cannot be negative.\" },\n    { \"field\": \"merchant\", \"message\": \"Merchant is required.\" }\n  ]\n}",
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/transactions" }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create transaction — validation error (negative amount)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountInPesos\": -500,\n  \"merchant\": \"\",\n  \"customerName\": \"Javier Muñoz\",\n  \"transactionDate\": \"2099-01-01T00:00:00\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"]
+            },
+            "description": "Intentionally invalid payload to verify the 400 + fieldErrors response:\n- amountInPesos is negative\n- merchant is blank\n- transactionDate is in the future"
+          },
+          "response": []
+        },
+        {
+          "name": "Update transaction",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountInPesos\": 25000,\n  \"merchant\": \"Supermercado Lider\",\n  \"customerName\": \"Camila Torres\",\n  \"transactionDate\": \"2026-03-07T11:30:00\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/{{transactionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions", "{{transactionId}}"]
+            },
+            "description": "Replaces all fields of an existing transaction (full update semantics).\nHTTP 200 — updated TransactionResponse.\nHTTP 400 — validation failed.\nHTTP 404 — transaction not found.\nHTTP 429 — rate limit exceeded."
+          },
+          "response": [
+            {
+              "name": "200 OK — updated",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"amountInPesos\": 25000,\n  \"merchant\": \"Supermercado Lider\",\n  \"customerName\": \"Camila Torres\",\n  \"transactionDate\": \"2026-03-07T11:30:00\"\n}",
+              "originalRequest": {
+                "method": "PUT",
+                "url": { "raw": "{{baseUrl}}/api/transactions/{{transactionId}}" }
+              }
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-03-07T11:30:00Z\",\n  \"status\": 404,\n  \"error\": \"Not Found\",\n  \"message\": \"Transaction not found.\",\n  \"path\": \"/api/transactions/999\",\n  \"fieldErrors\": []\n}",
+              "originalRequest": {
+                "method": "PUT",
+                "url": { "raw": "{{baseUrl}}/api/transactions/999" }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete transaction",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/{{transactionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions", "{{transactionId}}"]
+            },
+            "description": "Deletes an existing transaction by its primary key.\nHTTP 204 — deleted, no body.\nHTTP 404 — transaction not found.\nHTTP 429 — rate limit exceeded."
+          },
+          "response": [
+            {
+              "name": "204 No Content — deleted",
+              "status": "No Content",
+              "code": 204,
+              "header": [],
+              "body": "",
+              "originalRequest": {
+                "method": "DELETE",
+                "url": { "raw": "{{baseUrl}}/api/transactions/{{transactionId}}" }
+              }
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-03-07T11:30:00Z\",\n  \"status\": 404,\n  \"error\": \"Not Found\",\n  \"message\": \"Transaction not found.\",\n  \"path\": \"/api/transactions/999\",\n  \"fieldErrors\": []\n}",
+              "originalRequest": {
+                "method": "DELETE",
+                "url": { "raw": "{{baseUrl}}/api/transactions/999" }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

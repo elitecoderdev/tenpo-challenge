@@ -1,5 +1,7 @@
 package com.tenpo.challenge.shared.api;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * EN: Immutable record representing a single field-level validation failure within an
  *     {@link ApiError} response.
@@ -25,12 +27,14 @@ package com.tenpo.challenge.shared.api;
  * Design — SOLID:
  *   SRP : Carries only the field name and failure message; no logic.
  */
+@Schema(description = "A single field-level validation failure within an ApiError response.")
 public record ApiFieldError(
 
         // EN: The name of the field that failed validation (e.g. "amountInPesos", "transactionDate").
         //     Must match the JSON field name in the request body or the DTO accessor name.
         // ES: El nombre del campo que falló la validación (ej. "amountInPesos", "transactionDate").
         //     Debe coincidir con el nombre del campo JSON en el cuerpo de la solicitud o el nombre del accesor del DTO.
+        @Schema(description = "Name of the field that failed validation.", example = "amountInPesos")
         String field,
 
         // EN: The human-readable constraint violation message from the annotation
@@ -39,6 +43,7 @@ public record ApiFieldError(
         // ES: El mensaje de violación de restricción legible por humanos de la anotación
         //     (ej. "Transaction amount cannot be negative.").
         //     Usado directamente en el formulario del frontend para mostrar errores de campo inline.
+        @Schema(description = "Human-readable constraint violation message.", example = "Transaction amount cannot be negative.")
         String message
 ) {
 }
